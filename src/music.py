@@ -5,11 +5,13 @@ from discord_slash.utils.manage_commands import create_option
 from ytdlsource import YTDLSource
 from discord.ext import commands
 from discord_slash import cog_ext, SlashContext
+from queue import Queue
 
 
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+        self.songQueue = Queue()
 
     @cog_ext.cog_slash(
         name='join',
@@ -48,28 +50,23 @@ class Music(commands.Cog):
     async def play(self, ctx: SlashContext, input: str, channel: discord.VoiceChannel = None):
         await ctx.defer()
 
-        if ctx.voice_client is not None and ctx.voice_client.is_playing():
-            # TODO: Implement the queue here
-            return await ctx.send('Already playing')
+        if ctx.voice_client is None:
+            if ctx.author.voice is not None:
+                authorChannel = ctx.author.voice.channel
+                await authorChannel.connect()
+            elif channel is not None:
+                await channel.connect()
+            else:
+                await ctx.send('Join a voice channel, dummy')
+
+        player = await YTDLSource.from_url(input, loop=self.bot.loop, stream=True)
+        self.songQueue.put(player)
+
+        if not ctx.voice_client.is_playing():
+            self.play_song(ctx)
+            await ctx.send(f'Now playing: `{player.title} - {player.url}`')
         else:
-            player = await YTDLSource.from_url(input, loop=self.bot.loop, stream=True)
-
-        if ctx.author.voice is not None:
-            authorChannel = ctx.author.voice.channel
-            await authorChannel.connect()
-
-            ctx.voice_client.play(player,
-                                  after=lambda e: print('Player error: %s' % e) if e else None)
-
-            await ctx.send(f'Now playing: `{player.title}: {player.url}`')
-        elif channel is not None:
-            await channel.connect()
-            ctx.voice_client.play(player,
-                                  after=lambda e: print('Player error: %s' % e) if e else None)
-
-            await ctx.send(f'Now playing: `{player.title}: {player.url}`')
-        else:
-            await ctx.send('Join a voice channel, dummy')
+            return await ctx.send(f'Next up: `{player.title} - {player.url}`')
 
     @cog_ext.cog_slash(
         name='volume',
@@ -93,7 +90,18 @@ class Music(commands.Cog):
     async def stop(self, ctx: SlashContext):
         voice_client: VoiceClient = ctx.voice_client
         voice_client.stop()
+        self.songQueue.queue.clear()
         await ctx.send('Stopped')
+
+    @cog_ext.cog_slash(
+        name='skip',
+        description='Skip the current song',
+        guild_ids=[261917999064154112]
+    )
+    async def skip(self, ctx: SlashContext):
+        voice_client: VoiceClient = ctx.voice_client
+        voice_client.stop()
+        await ctx.send('Skipped')
 
     @cog_ext.cog_slash(
         name='resume',
@@ -125,7 +133,31 @@ class Music(commands.Cog):
         await voice_client.disconnect()
         await ctx.send('Sayonara, losers')
 
-    # TODO: Figure out how to perform this check with the new library
+    @cog_ext.cog_slash(
+        name='queue',
+        description='Display all upcoming songs',
+        guild_ids=[261917999064154112]
+    )
+    async def queue(self, ctx: SlashContext):
+        await ctx.defer()
+        message = ''
+        i = 1
+
+        if self.songQueue.empty():
+            return await ctx.send('Queue is empty')
+        else:
+            for item in self.songQueue.queue:
+                message += f'`{i}. {item.title} - {item.url}\n`'
+                i += 1
+
+            return await ctx.send(message)
+
+    def play_song(self, ctx: SlashContext):
+        if not self.songQueue.empty():
+            ctx.voice_client.play(self.songQueue.get(),
+                                  after=lambda e: self.play_song(ctx))
+
+    # TODO: Figure out how to perform this check with the discord-interactions library
     # @play.add_check
     # async def ensure_voice(ctx):
     #     if ctx.voice_client is None:

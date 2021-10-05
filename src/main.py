@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 from discord.ext import commands
 from discord_slash import SlashCommand
