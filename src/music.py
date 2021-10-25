@@ -9,6 +9,8 @@ from queue import Queue
 
 
 class Music(commands.Cog):
+    currentSong = None
+
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.songQueue = Queue()
@@ -99,6 +101,7 @@ class Music(commands.Cog):
         guild_ids=[261917999064154112]
     )
     async def skip(self, ctx: SlashContext):
+        await ctx.defer()
         voice_client: VoiceClient = ctx.voice_client
         voice_client.stop()
         await ctx.send('Skipped')
@@ -140,32 +143,47 @@ class Music(commands.Cog):
     )
     async def queue(self, ctx: SlashContext):
         await ctx.defer()
-        message = ''
+        message = '`'
         i = 1
 
         if self.songQueue.empty():
             return await ctx.send('Queue is empty')
         else:
             for item in self.songQueue.queue:
-                message += f'`{i}. {item.title} - {item.url}\n`'
+                message += f'{i}. {item.title} - {item.url}\n'
                 i += 1
 
+            message += '`'
             return await ctx.send(message)
+
+    @cog_ext.cog_slash(
+        name='repeat',
+        description='Repeat the funk',
+        options=[
+            create_option(
+                name='times',
+                description='Number of times to be repeated',
+                required=False,
+                option_type=SlashCommandOptionType.INTEGER
+            )
+        ],
+        guild_ids=[261917999064154112]
+    )
+    async def repeat(self, ctx: SlashContext, times=0):
+        await ctx.defer()
+        if times == 0:
+            player = await YTDLSource.from_url(self.currentSong.title, loop=self.bot.loop, stream=True)
+            self.songQueue.put(player)
+            await ctx.send(f'Repeating `{self.currentSong.title} - {self.currentSong.url}`')
+        else:
+            for x in range(times):
+                player = await YTDLSource.from_url(self.currentSong.title, loop=self.bot.loop, stream=True)
+                self.songQueue.put(player)
+
+            await ctx.send(f'Repeating {times} times: `{self.currentSong.title} - {self.currentSong.url}`')
 
     def play_song(self, ctx: SlashContext):
         if not self.songQueue.empty():
-            ctx.voice_client.play(self.songQueue.get(),
+            self.currentSong = self.songQueue.get()
+            ctx.voice_client.play(self.currentSong,
                                   after=lambda e: self.play_song(ctx))
-
-    # TODO: Figure out how to perform this check with the discord-interactions library
-    # @play.add_check
-    # async def ensure_voice(ctx):
-    #     if ctx.voice_client is None:
-    #         if ctx.author.voice:
-    #             await ctx.author.voice.channel.connect()
-    #         else:
-    #             await ctx.send('You are not connected to a voice channel.')
-    #             raise commands.CommandError(
-    #                 'Author not connected to a voice channel.')
-    #     elif ctx.voice_client.is_playing():
-    #         ctx.voice_client.stop()

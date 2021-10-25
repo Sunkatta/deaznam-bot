@@ -20,16 +20,16 @@ async def on_ready():
 
 
 @slash.slash(
-    name='repeat',
+    name='say',
     description='Repeat a phrase',
     guild_ids=[261917999064154112]
 )
-async def repeat(ctx, *, input):
+async def say(ctx, *, input):
     await ctx.send(input)
 
 
-@repeat.error
-async def repeat_error(ctx, error):
+@say.error
+async def say_error(ctx, error):
     await ctx.send('My creators are dumbasses and did not teach me how to repeat this...')
 
 bot.add_cog(Music(bot))
