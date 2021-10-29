@@ -131,7 +131,7 @@ class Music(commands.Cog):
         description='Disconnect from the current voice channel',
         guild_ids=[261917999064154112]
     )
-    async def pause(self, ctx: SlashContext):
+    async def disconnect(self, ctx: SlashContext):
         voice_client: VoiceClient = ctx.voice_client
         await voice_client.disconnect()
         await ctx.send('Sayonara, losers')
