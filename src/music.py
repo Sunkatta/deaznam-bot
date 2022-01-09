@@ -50,25 +50,28 @@ class Music(commands.Cog):
         guild_ids=[261917999064154112]
     )
     async def play(self, ctx: SlashContext, input: str, channel: discord.VoiceChannel = None):
-        await ctx.defer()
+        try:
+            await ctx.defer()
 
-        if ctx.voice_client is None:
-            if ctx.author.voice is not None:
-                authorChannel = ctx.author.voice.channel
-                await authorChannel.connect()
-            elif channel is not None:
-                await channel.connect()
+            if ctx.voice_client is None:
+                if ctx.author.voice is not None:
+                    authorChannel = ctx.author.voice.channel
+                    await authorChannel.connect()
+                elif channel is not None:
+                    await channel.connect()
+                else:
+                    await ctx.send('Join a voice channel, dummy')
+
+            player = await YTDLSource.from_url(input, loop=self.bot.loop, stream=True)
+            self.songQueue.put(player)
+
+            if not ctx.voice_client.is_playing():
+                self.play_song(ctx)
+                await ctx.send(f'Now playing: `{player.title} - {player.url}`')
             else:
-                await ctx.send('Join a voice channel, dummy')
-
-        player = await YTDLSource.from_url(input, loop=self.bot.loop, stream=True)
-        self.songQueue.put(player)
-
-        if not ctx.voice_client.is_playing():
-            self.play_song(ctx)
-            await ctx.send(f'Now playing: `{player.title} - {player.url}`')
-        else:
-            return await ctx.send(f'Next up: `{player.title} - {player.url}`')
+                return await ctx.send(f'Next up: `{player.title} - {player.url}`')
+        except:
+            await ctx.send('I did an whoopsie... Please try that again...')
 
     @cog_ext.cog_slash(
         name='volume',

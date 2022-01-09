@@ -9,8 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-bot = commands.Bot(command_prefix=commands.when_mentioned_or("/"),
-                   description="I don't know where this text is gonna be visualised...")
+bot = commands.Bot(command_prefix=commands.when_mentioned_or("/"))
 slash = SlashCommand(bot, sync_commands=True)
 
 
