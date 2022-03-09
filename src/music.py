@@ -17,18 +17,20 @@ class Music(commands.Cog):
 
     @cog_ext.cog_slash(
         name='join',
-        description='Joins the specified channel',
-        guild_ids=[261917999064154112]
+        description='Joins the specified channel'
     )
     async def join(self, ctx: SlashContext, channel: discord.VoiceChannel):
-        await ctx.defer()
-        voice_client: VoiceClient = ctx.voice_client
+        try:
+            await ctx.defer()
+            voice_client: VoiceClient = ctx.voice_client
 
-        if voice_client is not None:
-            return await voice_client.move_to(channel)
+            if voice_client is not None:
+                return await voice_client.move_to(channel)
 
-        await channel.connect()
-        await ctx.send(f'Joined channel: `{channel.name}`')
+            await channel.connect()
+            await ctx.send(f'Joined channel: `{channel.name}`')
+        except:
+            await ctx.send('I did an whoopsie... Please try that again...')
 
     @cog_ext.cog_slash(
         name='play',
@@ -46,8 +48,7 @@ class Music(commands.Cog):
                 required=False,
                 option_type=SlashCommandOptionType.CHANNEL
             )
-        ],
-        guild_ids=[261917999064154112]
+        ]
     )
     async def play(self, ctx: SlashContext, input: str, channel: discord.VoiceChannel = None):
         try:
@@ -61,6 +62,7 @@ class Music(commands.Cog):
                     await channel.connect()
                 else:
                     await ctx.send('Join a voice channel, dummy')
+                    return
 
             player = await YTDLSource.from_url(input, loop=self.bot.loop, stream=True)
             self.songQueue.put(player)
@@ -75,8 +77,7 @@ class Music(commands.Cog):
 
     @cog_ext.cog_slash(
         name='volume',
-        description='Tweak the master volume when in voice channel',
-        guild_ids=[261917999064154112]
+        description='Tweak the master volume when in voice channel'
     )
     async def volume(self, ctx: SlashContext, volume: int):
         voice_client: VoiceClient = ctx.voice_client
@@ -85,12 +86,11 @@ class Music(commands.Cog):
             return await ctx.send("Not connected to a voice channel.")
 
         voice_client.source.volume = volume / 100
-        await ctx.send("Changed volume to {}%".format(volume))
+        await ctx.send(f'Changed volume to {volume}%')
 
     @cog_ext.cog_slash(
         name='stop',
-        description='Stop the funk',
-        guild_ids=[261917999064154112]
+        description='Stop the funk'
     )
     async def stop(self, ctx: SlashContext):
         voice_client: VoiceClient = ctx.voice_client
@@ -100,8 +100,7 @@ class Music(commands.Cog):
 
     @cog_ext.cog_slash(
         name='skip',
-        description='Skip the current song',
-        guild_ids=[261917999064154112]
+        description='Skip the current song'
     )
     async def skip(self, ctx: SlashContext):
         await ctx.defer()
@@ -111,8 +110,7 @@ class Music(commands.Cog):
 
     @cog_ext.cog_slash(
         name='resume',
-        description='Resume the funk',
-        guild_ids=[261917999064154112]
+        description='Resume the funk'
     )
     async def resume(self, ctx: SlashContext):
         voice_client: VoiceClient = ctx.voice_client
@@ -121,8 +119,7 @@ class Music(commands.Cog):
 
     @cog_ext.cog_slash(
         name='pause',
-        description='Pause the funk',
-        guild_ids=[261917999064154112]
+        description='Pause the funk'
     )
     async def pause(self, ctx: SlashContext):
         voice_client: VoiceClient = ctx.voice_client
@@ -131,8 +128,7 @@ class Music(commands.Cog):
 
     @cog_ext.cog_slash(
         name='disconnect',
-        description='Disconnect from the current voice channel',
-        guild_ids=[261917999064154112]
+        description='Disconnect from the current voice channel'
     )
     async def disconnect(self, ctx: SlashContext):
         voice_client: VoiceClient = ctx.voice_client
@@ -141,8 +137,7 @@ class Music(commands.Cog):
 
     @cog_ext.cog_slash(
         name='queue',
-        description='Display all upcoming songs',
-        guild_ids=[261917999064154112]
+        description='Display all upcoming songs'
     )
     async def queue(self, ctx: SlashContext):
         await ctx.defer()
@@ -169,8 +164,7 @@ class Music(commands.Cog):
                 required=False,
                 option_type=SlashCommandOptionType.INTEGER
             )
-        ],
-        guild_ids=[261917999064154112]
+        ]
     )
     async def repeat(self, ctx: SlashContext, times=0):
         await ctx.defer()
