@@ -30,7 +30,7 @@ class Music(commands.Cog):
             await channel.connect()
             await ctx.send(f'Joined channel: `{channel.name}`')
         except:
-            await ctx.send('I did an whoopsie... Please try that again...')
+            await ctx.send('I did a whoopsie... Please try that again...')
 
     @cog_ext.cog_slash(
         name='play',
@@ -73,7 +73,7 @@ class Music(commands.Cog):
             else:
                 return await ctx.send(f'Next up: `{player.title} - {player.url}`')
         except:
-            await ctx.send('I did an whoopsie... Please try that again...')
+            await ctx.send('I did a whoopsie... Please try that again...')
 
     @cog_ext.cog_slash(
         name='volume',
