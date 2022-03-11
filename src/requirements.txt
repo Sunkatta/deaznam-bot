@@ -1,0 +1,5 @@
+discord.py==1.7.3
+discord_py_slash_command==3.0.1
+python-dotenv==0.19.2
+spotipy==2.19.0
+youtube_dl==2021.6.6
