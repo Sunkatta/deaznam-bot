@@ -1,18 +1,40 @@
 import discord
+import asyncio
+import youtube_dl
 from discord.voice_client import VoiceClient
 from discord_slash.model import SlashCommandOptionType
 from discord_slash.utils.manage_commands import create_option
-from ytdlsource import YTDLSource
 from discord.ext import commands
 from discord_slash import cog_ext, SlashContext
 from queue import Queue
+from song import Song
+
+ytdl_format_options = {
+    'format': 'bestaudio/best',
+    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'restrictfilenames': True,
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    'ignoreerrors': False,
+    'logtostderr': False,
+    'quiet': True,
+    'no_warnings': True,
+    'default_search': 'auto',
+    # bind to ipv4 since ipv6 addresses cause issues sometimes
+    'source_address': '0.0.0.0'
+}
+
+ffmpeg_options = {
+    'options': '-vn'
+}
+
+ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
 
 class Music(commands.Cog):
-    currentSong = None
-
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+        self.currentSong: Song = None
         self.songQueue = Queue()
 
     @cog_ext.cog_slash(
@@ -64,14 +86,28 @@ class Music(commands.Cog):
                     await ctx.send('Join a voice channel, dummy')
                     return
 
-            player = await YTDLSource.from_url(input, loop=self.bot.loop, stream=True)
-            self.songQueue.put(player)
+            loop = self.bot.loop or asyncio.get_event_loop()
+            data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
+            songsToEnqueue = []
+
+            for entry in data['entries']:
+                song = Song(entry['title'], entry['webpage_url'],
+                            discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
+                songsToEnqueue.append(song)
+
+            list(map(self.songQueue.put, songsToEnqueue))
 
             if not ctx.voice_client.is_playing():
                 self.play_song(ctx)
-                await ctx.send(f'Now playing: `{player.title} - {player.url}`')
+
+                if self.songQueue.qsize() == 0:
+                    await ctx.send(f'Now playing: `{self.currentSong.title} - {self.currentSong.webpage_url}`')
+                else:
+                    await ctx.send(f'Queued {len(songsToEnqueue)} songs')
+            elif self.songQueue.qsize() == 1 and len(songsToEnqueue) == 1:
+                await ctx.send(f'Next up: `{songsToEnqueue[0].title} - {songsToEnqueue[0].webpage_url}`')
             else:
-                return await ctx.send(f'Next up: `{player.title} - {player.url}`')
+                await ctx.send(f'Queued {len(songsToEnqueue)} songs')
         except:
             await ctx.send('I did a whoopsie... Please try that again...')
 
@@ -83,7 +119,7 @@ class Music(commands.Cog):
         voice_client: VoiceClient = ctx.voice_client
 
         if voice_client is None:
-            return await ctx.send("Not connected to a voice channel.")
+            return await ctx.send('Not connected to a voice channel')
 
         voice_client.source.volume = volume / 100
         await ctx.send(f'Changed volume to {volume}%')
@@ -148,39 +184,14 @@ class Music(commands.Cog):
             return await ctx.send('Queue is empty')
         else:
             for item in self.songQueue.queue:
-                message += f'{i}. {item.title} - {item.url}\n'
+                message += f'{i}.{item.title}\n'
                 i += 1
 
             message += '`'
             return await ctx.send(message)
 
-    @cog_ext.cog_slash(
-        name='repeat',
-        description='Repeat the funk',
-        options=[
-            create_option(
-                name='times',
-                description='Number of times to be repeated',
-                required=False,
-                option_type=SlashCommandOptionType.INTEGER
-            )
-        ]
-    )
-    async def repeat(self, ctx: SlashContext, times=0):
-        await ctx.defer()
-        if times == 0:
-            player = await YTDLSource.from_url(self.currentSong.title, loop=self.bot.loop, stream=True)
-            self.songQueue.put(player)
-            await ctx.send(f'Repeating `{self.currentSong.title} - {self.currentSong.url}`')
-        else:
-            for x in range(times):
-                player = await YTDLSource.from_url(self.currentSong.title, loop=self.bot.loop, stream=True)
-                self.songQueue.put(player)
-
-            await ctx.send(f'Repeating {times} times: `{self.currentSong.title} - {self.currentSong.url}`')
-
     def play_song(self, ctx: SlashContext):
         if not self.songQueue.empty():
-            self.currentSong = self.songQueue.get()
-            ctx.voice_client.play(self.currentSong,
+            self.currentSong: Song = self.songQueue.get()
+            ctx.voice_client.play(self.currentSong.player,
                                   after=lambda e: self.play_song(ctx))
