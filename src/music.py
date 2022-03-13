@@ -90,9 +90,14 @@ class Music(commands.Cog):
             data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
             songsToEnqueue = []
 
-            for entry in data['entries']:
-                song = Song(entry['title'], entry['webpage_url'],
-                            discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
+            if 'entries' in data:
+                for entry in data['entries']:
+                    song = Song(entry['title'], entry['webpage_url'],
+                                discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
+                    songsToEnqueue.append(song)
+            else:
+                song = Song(data['title'], data['webpage_url'], discord.FFmpegPCMAudio(
+                    data['url'], **ffmpeg_options))
                 songsToEnqueue.append(song)
 
             list(map(self.songQueue.put, songsToEnqueue))
