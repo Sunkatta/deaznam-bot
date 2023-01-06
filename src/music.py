@@ -147,7 +147,7 @@ class Music(commands.Cog):
         await ctx.defer()
 
         if self.songQueue.empty():
-            await ctx.send("Can't skip the void, bozzo")
+            await ctx.send("Can't skip the void, bozo")
         else:
             voice_client: VoiceClient = ctx.voice_client
             voice_client.stop()
