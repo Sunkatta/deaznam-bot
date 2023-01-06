@@ -52,7 +52,7 @@ class Music(commands.Cog):
             await channel.connect()
             await ctx.send(f'Joined channel: `{channel.name}`')
         except:
-            await ctx.send('I did a whoopsie... Please try that again...')
+            await ctx.send('I did an whoopsie... Please try that again...')
 
     @cog_ext.cog_slash(
         name='play',
@@ -114,7 +114,7 @@ class Music(commands.Cog):
             else:
                 await ctx.send(f'Queued {len(songsToEnqueue)} songs')
         except:
-            await ctx.send('I did a whoopsie... Please try that again...')
+            await ctx.send('I did an whoopsie... Please try that again...')
 
     @cog_ext.cog_slash(
         name='volume',
@@ -145,9 +145,13 @@ class Music(commands.Cog):
     )
     async def skip(self, ctx: SlashContext):
         await ctx.defer()
-        voice_client: VoiceClient = ctx.voice_client
-        voice_client.stop()
-        await ctx.send('Skipped')
+
+        if self.songQueue.empty():
+            await ctx.send("Can't skip the void, bozzo")
+        else:
+            voice_client: VoiceClient = ctx.voice_client
+            voice_client.stop()
+            await ctx.send('Skipped')
 
     @cog_ext.cog_slash(
         name='resume',
