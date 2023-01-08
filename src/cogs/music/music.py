@@ -5,7 +5,7 @@ from discord.voice_client import VoiceClient
 from discord.ext import commands
 from discord import app_commands
 from queue import Queue
-from song import Song
+from music.song import Song
 
 ytdl_format_options = {
     'format': 'bestaudio/best',
