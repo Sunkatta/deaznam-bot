@@ -1,11 +1,11 @@
 import discord
 import asyncio
-import youtube_dl
+import yt_dlp
 from discord.voice_client import VoiceClient
 from discord.ext import commands
 from discord import app_commands
 from queue import Queue
-from music.song import Song
+from cogs.music.song import Song
 
 ytdl_format_options = {
     'format': 'bestaudio/best',
@@ -26,7 +26,7 @@ ffmpeg_options = {
     'options': '-vn'
 }
 
-ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+ytdl = yt_dlp.YoutubeDL(ytdl_format_options)
 
 
 class Music(commands.Cog):
