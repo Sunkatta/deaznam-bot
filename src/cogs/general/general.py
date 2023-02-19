@@ -37,6 +37,7 @@ class General(commands.Cog):
 
                     break
 
+    # TODO: fix
     @app_commands.command()
     @commands.guild_only()
     @commands.is_owner()
@@ -74,9 +75,8 @@ class General(commands.Cog):
         name='say',
         description='Repeat a phrase'
     )
-    async def say(interaction: discord.Interaction, *, input: str):
-        await interaction.response.send_message(input)
-
-    @say.error
-    async def say_error(interaction: discord.Interaction, error):
-        await interaction.response.send_message('My creators are dumbasses and did not teach me how to repeat this...')
+    async def say(self, interaction: discord.Interaction, input: str):
+        try:
+            await interaction.response.send_message(input)
+        except:
+            await interaction.response.send_message('My creators are dumbasses and did not teach me how to repeat this...')
