@@ -5,7 +5,7 @@ from cogs.general.general import General
 from discord.ext import commands
 
 
-async def setup() -> commands.Bot:
+def setup() -> commands.Bot:
     intents = discord.Intents.default()
     intents.message_content = True
 
