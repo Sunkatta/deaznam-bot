@@ -186,17 +186,23 @@ class Music(commands.Cog):
     )
     async def queue(self, interaction: discord.Interaction):
         message = '`'
-        i = 1 # maybe 0
+        i = 0
 
         if self.songQueue.empty():
             return await interaction.response.send_message('Queue is empty')
         else:
             for item in self.songQueue.queue:
-                message += f'{i}.{item.title}\n'
+                message += f'{i + 1}.{item.title}\n'
                 i += 1
 
             message += '`'
-            return await interaction.response.send_message(message)
+
+            # todo: message can be split if more than 2000 characters
+            try:
+                return await interaction.response.send_message(message)
+            except Exception as e:
+                print(e)
+                return await interaction.response.send_message('Queue ooopsy')
 
     def play_song(self, interaction: discord.Interaction):
         if not self.songQueue.empty():

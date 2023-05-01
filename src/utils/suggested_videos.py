@@ -1,7 +1,7 @@
 from youtubesearchpython import VideosSearch
 import urllib.parse
 
-VIDEO_LIMIT = 20
+VIDEO_LIMIT = 10
 
 def get(title: str) -> list:
     query = urllib.parse.quote(title)
@@ -13,5 +13,6 @@ def get(title: str) -> list:
     i = 0
     while i < VIDEO_LIMIT:
         urls.append(results[i]['link'])
+        i = i + 1
 
     return urls
