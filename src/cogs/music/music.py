@@ -111,7 +111,7 @@ class Music(commands.Cog):
             elif self.songQueue.qsize() == 1 and len(songsToEnqueue) == 1:
                 await interaction.followup.send(f'Next up: `{songsToEnqueue[0].title} - {songsToEnqueue[0].webpage_url}`')
             else:
-                await interaction.followup.send(f'Next up: `{songsToEnqueue[self.songQueue.qsize() - 1].title} - {songsToEnqueue[self.songQueue.qsize() - 1].webpage_url}`. Queued {str(len(songsToEnqueue))} songs')
+                await interaction.followup.send(f'Queued {str(len(songsToEnqueue))} songs')
         except Exception as e:
             print(e)
             await interaction.followup.send('I did an whoopsie... Please try that again...')
