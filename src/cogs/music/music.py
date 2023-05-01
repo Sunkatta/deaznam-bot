@@ -6,6 +6,7 @@ from discord.ext import commands
 from discord import app_commands
 from queue import Queue
 from cogs.music.song import Song
+from utils import suggested_videos
 
 ytdl_format_options = {
     'format': 'bestaudio/best',
@@ -19,8 +20,7 @@ ytdl_format_options = {
     'no_warnings': True,
     'default_search': 'auto',
     # bind to ipv4 since ipv6 addresses cause issues sometimes
-    'source_address': '0.0.0.0',
-    'pbj': '1'
+    'source_address': '0.0.0.0'
 }
 
 ffmpeg_options = {
@@ -72,22 +72,32 @@ class Music(commands.Cog):
                     return
 
             loop = self.bot.loop or asyncio.get_event_loop()
-            data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
-            songsToEnqueue = []
 
-            if 'entries' in data:
-                for entry in data['entries']:
-                    song = Song(entry['title'],
-                                entry['webpage_url'],
-                                discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
+            songsToEnqueue = []
+            if 'https://' not in input: # automated playlist
+                urls = suggested_videos.get(input)
+                for url in urls:
+                    data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
+                    song = Song(data['title'],
+                                    data['webpage_url'],
+                                    discord.FFmpegPCMAudio(data['url'], **ffmpeg_options))
 
                     songsToEnqueue.append(song)
             else:
-                song = Song(data['title'],
-                            data['webpage_url'],
-                            discord.FFmpegPCMAudio(data['url'], **ffmpeg_options))
+                data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
+                if 'entries' in data: # playlist
+                    for entry in data['entries']:
+                        song = Song(entry['title'],
+                                    entry['webpage_url'],
+                                    discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
 
-                songsToEnqueue.append(song)
+                        songsToEnqueue.append(song)
+                else: # single
+                    song = Song(data['title'],
+                                data['webpage_url'],
+                                discord.FFmpegPCMAudio(data['url'], **ffmpeg_options))
+
+                    songsToEnqueue.append(song)
 
             list(map(self.songQueue.put, songsToEnqueue))
 
@@ -101,8 +111,9 @@ class Music(commands.Cog):
             elif self.songQueue.qsize() == 1 and len(songsToEnqueue) == 1:
                 await interaction.followup.send(f'Next up: `{songsToEnqueue[0].title} - {songsToEnqueue[0].webpage_url}`')
             else:
-                await interaction.followup.send(f'Queued {str(len(songsToEnqueue))} songs')
-        except:
+                await interaction.followup.send(f'Next up: `{songsToEnqueue[self.songQueue.qsize() - 1].title} - {songsToEnqueue[self.songQueue.qsize() - 1].webpage_url}`. Queued {str(len(songsToEnqueue))} songs')
+        except Exception as e:
+            print(e)
             await interaction.followup.send('I did an whoopsie... Please try that again...')
 
     @app_commands.command(
@@ -175,7 +186,7 @@ class Music(commands.Cog):
     )
     async def queue(self, interaction: discord.Interaction):
         message = '`'
-        i = 1
+        i = 1 # maybe 0
 
         if self.songQueue.empty():
             return await interaction.response.send_message('Queue is empty')
