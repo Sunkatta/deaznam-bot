@@ -1,7 +1,7 @@
 from youtubesearchpython import VideosSearch
 import urllib.parse
 
-LIMIT = 1
+LIMIT = 10
 
 def get(title: str, limit: int) -> list:
     query = urllib.parse.quote(title)

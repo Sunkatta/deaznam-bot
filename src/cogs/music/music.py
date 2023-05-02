@@ -81,8 +81,8 @@ class Music(commands.Cog):
                 for url in urls:
                     data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
                     song = Song(data['title'],
-                                    data['webpage_url'],
-                                    discord.FFmpegPCMAudio(data['url'], **ffmpeg_options))
+                                data['webpage_url'],
+                                discord.FFmpegPCMAudio(data['url'], **ffmpeg_options))
 
                     songsToEnqueue.append(song)
             else:
@@ -95,14 +95,11 @@ class Music(commands.Cog):
 
                         songsToEnqueue.append(song)
                 else: # by video url
-                    urls = suggested.get(input, limit)
-                    for url in urls:
-                        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
-                        song = Song(data['title'],
-                                        data['webpage_url'],
-                                        discord.FFmpegPCMAudio(data['url'], **ffmpeg_options))
+                    song = Song(data['title'],
+                                data['webpage_url'],
+                                discord.FFmpegPCMAudio(data['url'], **ffmpeg_options))
 
-                        songsToEnqueue.append(song)
+                    songsToEnqueue.append(song)
 
             list(map(self.songQueue.put, songsToEnqueue))
 
