@@ -183,6 +183,14 @@ class Music(commands.Cog):
         await interaction.response.send_message('Sayonara, losers')
 
     @app_commands.command(
+        name='finito',
+        description='Sepuko from virtual life'
+    )
+    async def finito(self, interaction: discord.Interaction):
+        await self.disconnect(interaction)
+        raise SystemExit
+
+    @app_commands.command(
         name='queue',
         description='Display all upcoming songs'
     )
