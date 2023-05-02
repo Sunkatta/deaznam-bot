@@ -85,7 +85,7 @@ class Music(commands.Cog):
                     songsToEnqueue.append(song)
             else:
                 data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
-                if 'entries' in data: # playlist
+                if 'entries' in data: # by playlist
                     for entry in data['entries']:
                         song = Song(entry['title'],
                                     entry['webpage_url'],
