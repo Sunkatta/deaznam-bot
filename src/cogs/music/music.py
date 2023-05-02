@@ -188,13 +188,14 @@ class Music(commands.Cog):
     )
     async def queue(self, interaction: discord.Interaction):
         message = '`'
-        i = 0
 
         if self.songQueue.empty():
             return await interaction.response.send_message('Queue is empty')
         else:
+            message += f'1.{self.currentSong.title}\n'
+            i = 0
             for item in self.songQueue.queue:
-                message += f'{i + 1}.{item.title}\n'
+                message += f'{i + 2}.{item.title}\n'
                 i += 1
 
             message += '`'
