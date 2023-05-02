@@ -7,6 +7,7 @@ from discord import app_commands
 from queue import Queue
 from cogs.music.song import Song
 from utils import suggested
+import traceback
 
 ytdl_format_options = {
     'format': 'bestaudio/best',
@@ -51,6 +52,7 @@ class Music(commands.Cog):
             await channel.connect()
             await interaction.response.send_message(f'Joined channel: `{channel.name}`')
         except:
+            print(traceback.format_exc())
             await interaction.response.send_message('I did an whoopsie... Please try that again...')
 
     @app_commands.command(
@@ -115,8 +117,8 @@ class Music(commands.Cog):
                 await interaction.followup.send(f'Next up: `{songsToEnqueue[0].title} - {songsToEnqueue[0].webpage_url}`')
             else:
                 await interaction.followup.send(f'Queued {str(len(songsToEnqueue))} songs')
-        except Exception as e:
-            print(e)
+        except:
+            print(traceback.format_exc())
             await interaction.followup.send('I did an whoopsie... Please try that again...')
 
     @app_commands.command(
@@ -203,8 +205,8 @@ class Music(commands.Cog):
             # todo: message can be split if more than 2000 characters
             try:
                 return await interaction.response.send_message(message)
-            except Exception as e:
-                print(e)
+            except:
+                print(traceback.format_exc())
                 return await interaction.response.send_message('Queue ooopsy')
 
     def play_song(self, interaction: discord.Interaction):
