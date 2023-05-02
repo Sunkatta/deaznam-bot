@@ -74,7 +74,7 @@ class Music(commands.Cog):
             loop = self.bot.loop or asyncio.get_event_loop()
 
             songsToEnqueue = []
-            if 'https://' not in input: # automated playlist
+            if 'https://' not in input: # by text
                 urls = suggested.get(input, limit)
                 for url in urls:
                     data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
@@ -92,12 +92,15 @@ class Music(commands.Cog):
                                     discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
 
                         songsToEnqueue.append(song)
-                else: # single
-                    song = Song(data['title'],
-                                data['webpage_url'],
-                                discord.FFmpegPCMAudio(data['url'], **ffmpeg_options))
+                else: # by video url
+                    urls = suggested.get(input, limit)
+                    for url in urls:
+                        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
+                        song = Song(data['title'],
+                                        data['webpage_url'],
+                                        discord.FFmpegPCMAudio(data['url'], **ffmpeg_options))
 
-                    songsToEnqueue.append(song)
+                        songsToEnqueue.append(song)
 
             list(map(self.songQueue.put, songsToEnqueue))
 
