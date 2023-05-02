@@ -6,7 +6,7 @@ from discord.ext import commands
 from discord import app_commands
 from queue import Queue
 from cogs.music.song import Song
-from utils import suggested_videos
+from utils import suggested
 
 ytdl_format_options = {
     'format': 'bestaudio/best',
@@ -57,7 +57,7 @@ class Music(commands.Cog):
         name='play',
         description='Time to get funky',
     )
-    async def play(self, interaction: discord.Interaction, input: str, channel: discord.VoiceChannel = None):
+    async def play(self, interaction: discord.Interaction, input: str, channel: discord.VoiceChannel = None, limit: int = suggested.LIMIT):
         try:
             await interaction.response.defer()
 
@@ -75,7 +75,7 @@ class Music(commands.Cog):
 
             songsToEnqueue = []
             if 'https://' not in input: # automated playlist
-                urls = suggested_videos.get(input)
+                urls = suggested.get(input, limit)
                 for url in urls:
                     data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
                     song = Song(data['title'],
