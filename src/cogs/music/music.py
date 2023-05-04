@@ -80,7 +80,7 @@ class Music(commands.Cog):
                 parts = input.split('!')
                 if parts:
                     input = parts[0]
-                    limit = parts[1]
+                    limit = int(parts[1])
                 urls = suggested.get(input, limit)
                 if not urls:
                     data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
