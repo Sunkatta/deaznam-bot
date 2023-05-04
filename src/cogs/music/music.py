@@ -186,7 +186,7 @@ class Music(commands.Cog):
         name='seppuku',
         description='seppuku the funk'
     )
-    async def finito(self, interaction: discord.Interaction):
+    async def seppuku(self, interaction: discord.Interaction):
         await self.disconnect(interaction)
         raise SystemExit
 
