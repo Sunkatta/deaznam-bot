@@ -77,10 +77,6 @@ class Music(commands.Cog):
 
             songsToEnqueue = []
             if 'https://' not in input: # by text
-                if '>' in input:
-                    parts = input.split('>')
-                    input = parts[0]
-                    limit = int(parts[1])
                 urls = suggested.get(input, limit)
                 if not urls:
                     data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
