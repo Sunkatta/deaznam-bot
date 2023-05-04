@@ -1,9 +1,11 @@
 from youtubesearchpython import VideosSearch
 import urllib.parse
 
-LIMIT = 10
+LIMIT = 1
 
 def get(title: str, limit: int) -> list:
+    if not limit:
+        limit = LIMIT
     query = urllib.parse.quote(title)
     search = VideosSearch(query, limit=limit)
     results = search.result()['result']

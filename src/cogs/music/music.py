@@ -59,7 +59,7 @@ class Music(commands.Cog):
         name='play',
         description='Time to get funky',
     )
-    async def play(self, interaction: discord.Interaction, input: str, channel: discord.VoiceChannel = None, limit: int = suggested.LIMIT):
+    async def play(self, interaction: discord.Interaction, input: str, channel: discord.VoiceChannel = None, limit: int = None):
         try:
             await interaction.response.defer()
 
@@ -183,8 +183,8 @@ class Music(commands.Cog):
         await interaction.response.send_message('Sayonara, losers')
 
     @app_commands.command(
-        name='finito',
-        description='Sepuko from virtual life'
+        name='seppuku',
+        description='seppuku the funk'
     )
     async def finito(self, interaction: discord.Interaction):
         await self.disconnect(interaction)
