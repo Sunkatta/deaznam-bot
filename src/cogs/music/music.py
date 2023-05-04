@@ -85,7 +85,7 @@ class Music(commands.Cog):
                 if not urls:
                     data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
                     if 'url' not in data:
-                        data['url'] = data['entries'][0]['data']
+                        data['url'] = data['entries'][0]['url']
                     song = Song(data['title'],
                                 data['webpage_url'],
                                 discord.FFmpegPCMAudio(data['url'], **ffmpeg_options))
