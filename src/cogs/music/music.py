@@ -90,7 +90,7 @@ class Music(commands.Cog):
                                         entry['webpage_url'],
                                         discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
 
-                        songsToEnqueue.append(song)
+                            songsToEnqueue.append(song)
                     else: # by video url
                         song = Song(data['title'],
                                     data['webpage_url'],
