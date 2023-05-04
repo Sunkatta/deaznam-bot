@@ -184,7 +184,7 @@ class Music(commands.Cog):
 
     @app_commands.command(
         name='seppuku',
-        description='seppuku the funk'
+        description='Seppuku the funk'
     )
     async def seppuku(self, interaction: discord.Interaction):
         await self.disconnect(interaction)
