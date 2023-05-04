@@ -84,7 +84,7 @@ class Music(commands.Cog):
                 urls = suggested.get(input, limit)
                 if not urls:
                     data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
-                    if 'url' not in data:
+                    if 'url' not in data: # HQ fix for broken extract_info
                         data['url'] = data['entries'][0]['url']
                         data['webpage_url'] = data['entries'][0]['webpage_url']
                     song = Song(data['title'],
