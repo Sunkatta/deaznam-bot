@@ -10,6 +10,9 @@ def get(title: str, limit: int) -> list:
     search = VideosSearch(query, limit=limit)
     results = search.result()['result']
 
+    if not results:
+        return []
+
     urls = []
 
     i = 0

@@ -82,6 +82,13 @@ class Music(commands.Cog):
                     input = parts[0]
                     limit = parts[1]
                 urls = suggested.get(input, limit)
+                if not urls:
+                    data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
+                    song = Song(data['title'],
+                                data['webpage_url'],
+                                discord.FFmpegPCMAudio(data['url'], **ffmpeg_options))
+
+                    songsToEnqueue.append(song)
                 for url in urls:
                     data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
                     song = Song(data['title'],
