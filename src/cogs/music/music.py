@@ -232,7 +232,7 @@ class Music(commands.Cog):
                 return await interaction.response.send_message(message)
             except:
                 print(traceback.format_exc())
-                return await interaction.response.send_message('Queue ooopsy')
+                return await interaction.response.send_message('I did an whoopsie... Queue bonk again...')
 
     def play_song(self, interaction: discord.Interaction):
         if not self.songQueue.empty():
