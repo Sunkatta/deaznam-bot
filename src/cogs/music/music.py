@@ -84,14 +84,19 @@ class Music(commands.Cog):
                 urls = suggested.get(input, limit)
                 if not urls:
                     data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
-                    if 'url' not in data: # HQ fix for broken extract_info
-                        data['url'] = data['entries'][0]['url']
-                        data['webpage_url'] = data['entries'][0]['webpage_url']
-                    song = Song(data['title'],
-                                data['webpage_url'],
-                                discord.FFmpegPCMAudio(data['url'], **ffmpeg_options))
+                    if 'entries' in data: # by playlist
+                        for entry in data['entries']:
+                            song = Song(entry['title'],
+                                        entry['webpage_url'],
+                                        discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
 
-                    songsToEnqueue.append(song)
+                        songsToEnqueue.append(song)
+                    else: # by video url
+                        song = Song(data['title'],
+                                    data['webpage_url'],
+                                    discord.FFmpegPCMAudio(data['url'], **ffmpeg_options))
+
+                        songsToEnqueue.append(song)
                 for url in urls:
                     data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
                     song = Song(data['title'],
