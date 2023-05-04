@@ -77,8 +77,8 @@ class Music(commands.Cog):
 
             songsToEnqueue = []
             if 'https://' not in input: # by text
-                parts = input.split('!')
-                if parts:
+                if '!' in input:
+                    parts = input.split('!')
                     input = parts[0]
                     limit = int(parts[1])
                 urls = suggested.get(input, limit)
