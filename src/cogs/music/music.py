@@ -75,7 +75,6 @@ class Music(commands.Cog):
 
             loop = self.bot.loop or asyncio.get_event_loop()
 
-            songsToEnqueue = []
             songsToEnqueue = await self.__prepped_songs(loop, input)
 
             if limit > 0:
@@ -191,26 +190,41 @@ class Music(commands.Cog):
             await interaction.response.send_message('Queue is empty')
             return
 
-        chunk_size = 15
-        chunks = [queue[i:i+chunk_size] for i in range(0, len(queue), chunk_size)]
+        message = ''
+        i = 1
+        for item in queue:
+            message += f'{i}. {item.title} - {item.webpage_url}\n'
+            i += 1
 
-        for i, chunk in enumerate(chunks):
-            message = f'```\n'
-            for j, item in enumerate(chunk):
-                message += f'{i*chunk_size + j + 1}. {item.title}\n'
-            message += '```'
-            try:
-                if interaction.response.is_done():
-                    await interaction.followup.send(message)
-                else: # from queue command
-                    await interaction.response.send_message(message)
-            except:
-                print(traceback.format_exc())
-                if interaction.response.is_done():
-                    await interaction.followup.send('I did an whoopsie... Queue bonk again...')
-                else: # from queue command
-                    await interaction.response.send_message('I did an whoopsie... Queue bonk again...')
+        try:
+            if len(message) > 1990:
+                chunks = []
+                for index in range(0, len(queue), 15):
+                    start_index = index
+                    end_index = index + 15
+                    chunk = []
+                    for i in range(start_index, min(end_index, len(queue))):
+                        chunk.append(queue[i])
+                    chunks.append(chunk)
 
+                for chunk in chunks:
+                    chunk_message = ''
+                    j = (chunks.index(chunk) * 15) + 1
+                    for item in chunk:
+                        chunk_message += f'{j}. {item.title} - {item.webpage_url}\n'
+                        j += 1
+                    await self.__send_message(interaction, f'```{chunk_message}```')
+            else:
+                await self.__send_message(interaction, f'```{message}```')
+        except:
+            print(traceback.format_exc())
+            await interaction.response.send_message('I did an queueuepsie... Please try that again...')
+
+    async def __send_message(self, interaction: discord.Interaction, message: str):
+        if interaction.response.is_done():
+            await interaction.followup.send(message)
+        else: # from queue command
+            await interaction.response.send_message(message)
 
     def __play_song(self, interaction: discord.Interaction):
         if not self.songQueue.empty():
@@ -218,7 +232,7 @@ class Music(commands.Cog):
             interaction.guild.voice_client.play(self.currentSong.player,
                                                 after=lambda e: self.__play_song(interaction))
 
-    async def __prepped_songs(self, loop, input: str) -> list:
+    async def __prepped_songs(self, loop: asyncio.AbstractEventLoop, input: str) -> list:
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
         songsToEnqueue = []
         if 'entries' in data:
