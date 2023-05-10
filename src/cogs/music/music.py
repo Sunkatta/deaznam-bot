@@ -163,19 +163,20 @@ class Music(commands.Cog):
     async def disconnect(self, interaction: discord.Interaction):
         await self.__disconnect(interaction)
 
-    async def __disconnect(self, interaction: discord.Interaction):
+    async def __disconnect(self, interaction: discord.Interaction, message: str = 'Sayonara'):
         voice_client: VoiceClient = interaction.guild.voice_client
-        voice_client.stop()
+        if voice_client:
+            voice_client.stop()
+            await voice_client.disconnect()
         self.songQueue.queue.clear()
-        await voice_client.disconnect()
-        await interaction.response.send_message('Sayonara, losers')
+        await interaction.response.send_message(f'{message}, losers')
 
     @app_commands.command(
         name='seppuku',
         description='Seppuku the funk'
     )
     async def seppuku(self, interaction: discord.Interaction):
-        await self.__disconnect(interaction)
+        await self.__disconnect(interaction, 'Seppukunara')
         raise SystemExit
 
     @app_commands.command(
