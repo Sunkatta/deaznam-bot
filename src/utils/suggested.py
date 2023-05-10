@@ -16,10 +16,8 @@ def get(title: str, limit: int) -> list:
     urls = []
 
     i = 0
-    while i < limit:
+    while i < len(results):
         urls.append(results[i]['link'])
         i = i + 1
-
-    print(urls)
 
     return urls
