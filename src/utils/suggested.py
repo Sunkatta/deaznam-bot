@@ -20,4 +20,6 @@ def get(title: str, limit: int) -> list:
         urls.append(results[i]['link'])
         i = i + 1
 
+    print(urls)
+
     return urls

@@ -59,7 +59,7 @@ class Music(commands.Cog):
         name='play',
         description='Time to get funky',
     )
-    async def play(self, interaction: discord.Interaction, input: str, channel: discord.VoiceChannel = None, limit: int = None):
+    async def play(self, interaction: discord.Interaction, input: str, channel: discord.VoiceChannel = None, limit: int = 0):
         try:
             await interaction.response.defer()
 
@@ -76,6 +76,7 @@ class Music(commands.Cog):
             loop = self.bot.loop or asyncio.get_event_loop()
 
             songsToEnqueue = []
+            webpage_url = None
             data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
             if 'entries' in data:
                 for entry in data['entries']:
@@ -84,17 +85,21 @@ class Music(commands.Cog):
                                 discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
 
                     songsToEnqueue.append(song)
+                    webpage_url = entry['webpage_url'] # take latest
             else:
                 song = Song(data['title'],
                             data['webpage_url'],
                             discord.FFmpegPCMAudio(data['url'], **ffmpeg_options))
 
                 songsToEnqueue.append(song)
+                webpage_url = data['webpage_url']
 
             if limit > 0:
                 urls = suggested.get(input, limit)
-                if not urls:
-                    data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
+                for url in urls:
+                    if url == webpage_url:
+                        continue
+                    data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
                     if 'entries' in data:
                         for entry in data['entries']:
                             song = Song(entry['title'],
