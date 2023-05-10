@@ -93,13 +93,13 @@ class Music(commands.Cog):
                 if self.songQueue.qsize() == 0:
                     await interaction.followup.send(f'Now playing: `{self.currentSong.title} - {self.currentSong.webpage_url}`')
                 else:
-                    await self.__queue(interaction)
-                    # await interaction.followup.send(f'Queued {str(len(songsToEnqueue))} songs')
+                    await interaction.followup.send(f'Queued {str(len(songsToEnqueue))} songs')
+                    await self.__queue(interaction, songsToEnqueue)
             elif self.songQueue.qsize() == 1 and len(songsToEnqueue) == 1:
                 await interaction.followup.send(f'Next up: `{songsToEnqueue[0].title} - {songsToEnqueue[0].webpage_url}`')
             else:
-                await self.__queue(interaction)
-                # await interaction.followup.send(f'Queued {str(len(songsToEnqueue))} songs')
+                await interaction.followup.send(f'Queued {str(len(songsToEnqueue))} songs')
+                await self.__queue(interaction, songsToEnqueue)
         except:
             print(traceback.format_exc())
             await interaction.followup.send('I did an whoopsie... Please try that again...')
@@ -162,6 +162,9 @@ class Music(commands.Cog):
         description='Disconnect from the current voice channel'
     )
     async def disconnect(self, interaction: discord.Interaction):
+        await self.__disconnect(interaction)
+
+    async def __disconnect(self, interaction: discord.Interaction):
         voice_client: VoiceClient = interaction.guild.voice_client
         voice_client.stop()
         self.songQueue.queue.clear()
@@ -173,7 +176,7 @@ class Music(commands.Cog):
         description='Seppuku the funk'
     )
     async def seppuku(self, interaction: discord.Interaction):
-        await self.disconnect(interaction)
+        await self.__disconnect(interaction)
         raise SystemExit
 
     @app_commands.command(
@@ -181,27 +184,33 @@ class Music(commands.Cog):
         description='Display all upcoming songs'
     )
     async def queue(self, interaction: discord.Interaction):
-        await self.__queue(interaction)
+        await self.__queue(interaction, self.songQueue.queue)
 
-    async def __queue(self, interaction: discord.Interaction):
-        message = '`'
-
-        if self.songQueue.empty():
+    async def __queue(self, interaction: discord.Interaction, queue: list):
+        if not queue:
             await interaction.response.send_message('Queue is empty')
-        else:
-            message += f'1.{self.currentSong.title}\n'
-            i = 0
-            for item in self.songQueue.queue:
-                message += f'{i + 2}.{item.title}\n'
-                i += 1
+            return
 
-            message += '`'
+        chunk_size = 15
+        chunks = [queue[i:i+chunk_size] for i in range(0, len(queue), chunk_size)]
 
+        for i, chunk in enumerate(chunks):
+            message = f'```\n'
+            for j, item in enumerate(chunk):
+                message += f'{i*chunk_size + j + 1}. {item.title}\n'
+            message += '```'
             try:
-                await interaction.followup.send(message)
+                if interaction.response.is_done():
+                    await interaction.followup.send(message)
+                else: # from queue command
+                    await interaction.response.send_message(message)
             except:
                 print(traceback.format_exc())
-                await interaction.followup.send('I did an whoopsie... Queue bonk again...')
+                if interaction.response.is_done():
+                    await interaction.followup.send('I did an whoopsie... Queue bonk again...')
+                else: # from queue command
+                    await interaction.response.send_message('I did an whoopsie... Queue bonk again...')
+
 
     def __play_song(self, interaction: discord.Interaction):
         if not self.songQueue.empty():
