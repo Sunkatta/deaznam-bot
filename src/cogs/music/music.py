@@ -1,36 +1,13 @@
 import discord
 import asyncio
-import yt_dlp
 from discord.voice_client import VoiceClient
 from discord.ext import commands
 from discord import app_commands
 from queue import Queue
 from cogs.music.song import Song
 from utils import suggested
+from utils.config import ytdl, ffmpeg_options
 import traceback
-
-ytdl_format_options = {
-    'format': 'bestaudio/best',
-    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
-    'restrictfilenames': True,
-    'noplaylist': True,
-    'nocheckcertificate': True,
-    'ignoreerrors': False,
-    'logtostderr': False,
-    'quiet': True,
-    'no_warnings': True,
-    'default_search': 'auto',
-    # bind to ipv4 since ipv6 addresses cause issues sometimes
-    'source_address': '0.0.0.0'
-}
-
-ffmpeg_options = {
-    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-    'options': '-vn'
-}
-
-ytdl = yt_dlp.YoutubeDL(ytdl_format_options)
-
 
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -59,7 +36,7 @@ class Music(commands.Cog):
         name='play',
         description='Time to get funky',
     )
-    async def play(self, interaction: discord.Interaction, input: str, channel: discord.VoiceChannel = None, limit: int = 0):
+    async def play(self, interaction: discord.Interaction, input: str, channel: discord.VoiceChannel = None, limit: int = 1):
         try:
             await interaction.response.defer()
 
@@ -75,16 +52,18 @@ class Music(commands.Cog):
 
             loop = self.bot.loop or asyncio.get_event_loop()
 
-            songsToEnqueue = await self.__prepped_songs(loop, input)
+            entries_info = await self.__prep_entries(loop, input)
+            songs_to_enqueue = entries_info['songs_to_enqueue']
 
-            if limit > 0:
-                urls = suggested.get(input, limit)
+            if limit > 1:
+                urls = suggested.get(entries_info['suggest'], limit)
                 for url in urls:
-                    if self.latest_url == url:
+                    if entries_info['url'] == url:
                         continue
-                    songsToEnqueue.extend(await self.__prepped_songs(loop, url))
+                    entries_info = await self.__prep_entries(loop, url)
+                    songs_to_enqueue.extend(entries_info['songs_to_enqueue'])
 
-            list(map(self.songQueue.put, songsToEnqueue))
+            list(map(self.songQueue.put, songs_to_enqueue))
 
             if not interaction.guild.voice_client.is_playing():
                 self.__play_song(interaction)
@@ -92,13 +71,13 @@ class Music(commands.Cog):
                 if self.songQueue.qsize() == 0:
                     await interaction.followup.send(f'Now playing: `{self.currentSong.title} - {self.currentSong.webpage_url}`')
                 else:
-                    await interaction.followup.send(f'Queued {str(len(songsToEnqueue))} songs')
-                    await self.__queue(interaction, songsToEnqueue)
-            elif self.songQueue.qsize() == 1 and len(songsToEnqueue) == 1:
-                await interaction.followup.send(f'Next up: `{songsToEnqueue[0].title} - {songsToEnqueue[0].webpage_url}`')
+                    await interaction.followup.send(f'Queued {str(len(songs_to_enqueue))} songs')
+                    await self.__queue(interaction, songs_to_enqueue)
+            elif self.songQueue.qsize() == 1 and len(songs_to_enqueue) == 1:
+                await interaction.followup.send(f'Next up: `{songs_to_enqueue[0].title} - {songs_to_enqueue[0].webpage_url}`')
             else:
-                await interaction.followup.send(f'Queued {str(len(songsToEnqueue))} songs')
-                await self.__queue(interaction, songsToEnqueue)
+                await interaction.followup.send(f'Queued {str(len(songs_to_enqueue))} songs')
+                await self.__queue(interaction, songs_to_enqueue)
         except:
             print(traceback.format_exc())
             await interaction.followup.send('I did an whoopsie... Please try that again...')
@@ -226,34 +205,42 @@ class Music(commands.Cog):
             print(traceback.format_exc())
             await interaction.response.send_message('I did an queueuepsie... Please try that again...')
 
-    async def __send_message(self, interaction: discord.Interaction, message: str):
-        if interaction.response.is_done():
-            await interaction.followup.send(message)
-        else: # from queue command
-            await interaction.response.send_message(message)
-
     def __play_song(self, interaction: discord.Interaction):
         if not self.songQueue.empty():
             self.currentSong: Song = self.songQueue.get()
             interaction.guild.voice_client.play(self.currentSong.player,
                                                 after=lambda e: self.__play_song(interaction))
 
-    async def __prepped_songs(self, loop: asyncio.AbstractEventLoop, input: str) -> list:
+    async def __prep_entries(self, loop: asyncio.AbstractEventLoop, input: str) -> list:
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
-        songsToEnqueue = []
+        songs_to_enqueue = []
         if 'entries' in data:
             for entry in data['entries']:
-                song = Song(entry['title'],
-                            entry['webpage_url'],
-                            discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
-
-                songsToEnqueue.append(song)
-                self.latest_url = entry['webpage_url'] # take latest
+                prep_entry = self.__prep_entry(entry)
+                songs_to_enqueue.append(prep_entry['song'])
         else:
-            song = Song(data['title'],
-                        data['webpage_url'],
-                        discord.FFmpegPCMAudio(data['url'], **ffmpeg_options))
+            prep_entry = self.__prep_entry(data)
+            songs_to_enqueue.append(prep_entry['song'])
+        songs = {'songs_to_enqueue': songs_to_enqueue}
+        return {**songs, **prep_entry['latest_info']}
 
-            songsToEnqueue.append(song)
-            self.latest_url = data['webpage_url']
-        return songsToEnqueue
+    def __prep_entry(self, entry: dict) -> dict:
+        song = Song(entry['title'],
+                    entry['webpage_url'],
+                    discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
+
+        words = entry['title'].split(' ')
+        suggest = entry['tags'][0] if len(entry['tags']) > 0 else ' '.join(words[:2])
+        return {
+            'song': song,
+            'latest_info': {
+                'url': entry['webpage_url'],
+                'suggest': suggest
+            }
+        }
+
+    async def __send_message(self, interaction: discord.Interaction, message: str):
+        if interaction.response.is_done():
+            await interaction.followup.send(message)
+        else: # from queue command
+            await interaction.response.send_message(message)

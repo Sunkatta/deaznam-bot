@@ -3,10 +3,10 @@ import urllib.parse
 
 LIMIT = 1
 
-def get(title: str, limit: int) -> list:
+def get(input: str, limit: int) -> list:
     if not limit:
         limit = LIMIT
-    query = urllib.parse.quote(title)
+    query = urllib.parse.quote(input)
     search = VideosSearch(query, limit=limit)
     results = search.result()['result']
 
