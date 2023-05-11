@@ -122,7 +122,8 @@ class Music(commands.Cog):
     )
     async def stop(self, interaction: discord.Interaction):
         voice_client: VoiceClient = interaction.guild.voice_client
-        voice_client.stop()
+        if voice_client:
+            voice_client.stop()
         self.songQueue.queue.clear()
         await interaction.response.send_message('Stopped')
 
@@ -169,7 +170,11 @@ class Music(commands.Cog):
             voice_client.stop()
             await voice_client.disconnect()
         self.songQueue.queue.clear()
-        await interaction.response.send_message(f'{message}, losers')
+
+        try:
+            await interaction.response.send_message(f'{message}, losers')
+        except:
+            print(traceback.format_exc())
 
     @app_commands.command(
         name='seppuku',
