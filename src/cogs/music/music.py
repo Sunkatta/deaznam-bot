@@ -60,8 +60,8 @@ class Music(commands.Cog):
                 for url in urls:
                     if entries_info['url'] == url:
                         continue
-                    entries_info = await self.__prep_entries(loop, url)
-                    songs_to_enqueue.extend(entries_info['songs_to_enqueue'])
+                    suggest_entries_info = await self.__prep_entries(loop, url)
+                    songs_to_enqueue.extend(suggest_entries_info['songs_to_enqueue'])
 
             list(map(self.songQueue.put, songs_to_enqueue))
 
