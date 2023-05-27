@@ -56,7 +56,7 @@ class Music(commands.Cog):
             songs_to_enqueue = entries_info['songs_to_enqueue']
 
             if limit > 1:
-                urls = suggested.get(entries_info['suggest'], limit)
+                urls = suggested.urls(entries_info['suggest'], limit)
                 for url in urls:
                     if entries_info['url'] == url:
                         continue
@@ -229,8 +229,7 @@ class Music(commands.Cog):
                     entry['webpage_url'],
                     discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
 
-        words = entry['title'].split(' ')
-        suggest = entry['tags'][0] if len(entry['tags']) > 0 else ' '.join(words[:2])
+        suggest = suggested.spicy_take(entry['title'].split(' '), entry['tags'])
         return {
             'song': song,
             'latest_info': {

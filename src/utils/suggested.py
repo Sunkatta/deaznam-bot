@@ -3,7 +3,7 @@ import urllib.parse
 
 LIMIT = 1
 
-def get(input: str, limit: int) -> list:
+def urls(input: str, limit: int) -> list:
     if not limit:
         limit = LIMIT
     query = urllib.parse.quote(input)
@@ -21,3 +21,17 @@ def get(input: str, limit: int) -> list:
         i = i + 1
 
     return urls
+
+def spicy_take(title_words: str, tags: list) -> str:
+    if len(tags) > 0:
+        similar_words = []
+        for title_word in title_words:
+            for tag in tags:
+                if title_word.lower() in tag.lower() or tag.lower() in title_word.lower():
+                    similar_words.append(tag)
+        if len(similar_words) > 0:
+            return ' '.join(similar_words)
+        else:
+            return tags[0]
+    else:
+        return ' '.join(title_words[:2])
