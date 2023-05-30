@@ -1,34 +1,13 @@
 import discord
 import asyncio
-import yt_dlp
 from discord.voice_client import VoiceClient
 from discord.ext import commands
 from discord import app_commands
 from queue import Queue
 from cogs.music.song import Song
-
-ytdl_format_options = {
-    'format': 'bestaudio/best',
-    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
-    'restrictfilenames': True,
-    'noplaylist': True,
-    'nocheckcertificate': True,
-    'ignoreerrors': False,
-    'logtostderr': False,
-    'quiet': True,
-    'no_warnings': True,
-    'default_search': 'auto',
-    # bind to ipv4 since ipv6 addresses cause issues sometimes
-    'source_address': '0.0.0.0'
-}
-
-ffmpeg_options = {
-    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-    'options': '-vn'
-}
-
-ytdl = yt_dlp.YoutubeDL(ytdl_format_options)
-
+from utils import suggested
+from utils.config import ytdl, ffmpeg_options
+import traceback
 
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -50,13 +29,14 @@ class Music(commands.Cog):
             await channel.connect()
             await interaction.response.send_message(f'Joined channel: `{channel.name}`')
         except:
+            print(traceback.format_exc())
             await interaction.response.send_message('I did an whoopsie... Please try that again...')
 
     @app_commands.command(
         name='play',
         description='Time to get funky',
     )
-    async def play(self, interaction: discord.Interaction, input: str, channel: discord.VoiceChannel = None):
+    async def play(self, interaction: discord.Interaction, input: str, channel: discord.VoiceChannel = None, limit: int = 1):
         try:
             await interaction.response.defer()
 
@@ -71,37 +51,35 @@ class Music(commands.Cog):
                     return
 
             loop = self.bot.loop or asyncio.get_event_loop()
-            data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
-            songsToEnqueue = []
 
-            if 'entries' in data:
-                for entry in data['entries']:
-                    song = Song(entry['title'],
-                                entry['webpage_url'],
-                                discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
+            entries_info = await self.__prep_entries(loop, input)
+            songs_to_enqueue = entries_info['songs_to_enqueue']
 
-                    songsToEnqueue.append(song)
-            else:
-                song = Song(data['title'],
-                            data['webpage_url'],
-                            discord.FFmpegPCMAudio(data['url'], **ffmpeg_options))
+            if limit > 1:
+                urls = suggested.urls(entries_info['suggest'], limit)
+                for url in urls:
+                    if entries_info['url'] == url:
+                        continue
+                    suggest_entries_info = await self.__prep_entries(loop, url)
+                    songs_to_enqueue.extend(suggest_entries_info['songs_to_enqueue'])
 
-                songsToEnqueue.append(song)
-
-            list(map(self.songQueue.put, songsToEnqueue))
+            list(map(self.songQueue.put, songs_to_enqueue))
 
             if not interaction.guild.voice_client.is_playing():
-                self.play_song(interaction)
+                self.__play_song(interaction)
 
                 if self.songQueue.qsize() == 0:
                     await interaction.followup.send(f'Now playing: `{self.currentSong.title} - {self.currentSong.webpage_url}`')
                 else:
-                    await interaction.followup.send(f'Queued {str(len(songsToEnqueue))} songs')
-            elif self.songQueue.qsize() == 1 and len(songsToEnqueue) == 1:
-                await interaction.followup.send(f'Next up: `{songsToEnqueue[0].title} - {songsToEnqueue[0].webpage_url}`')
+                    await interaction.followup.send(f'Queued {str(len(songs_to_enqueue))} songs')
+                    await self.__queue(interaction, songs_to_enqueue)
+            elif self.songQueue.qsize() == 1 and len(songs_to_enqueue) == 1:
+                await interaction.followup.send(f'Next up: `{songs_to_enqueue[0].title} - {songs_to_enqueue[0].webpage_url}`')
             else:
-                await interaction.followup.send(f'Queued {str(len(songsToEnqueue))} songs')
+                await interaction.followup.send(f'Queued {str(len(songs_to_enqueue))} songs')
+                await self.__queue(interaction, songs_to_enqueue)
         except:
+            print(traceback.format_exc())
             await interaction.followup.send('I did an whoopsie... Please try that again...')
 
     @app_commands.command(
@@ -112,7 +90,7 @@ class Music(commands.Cog):
         voice_client: VoiceClient = interaction.guild.voice_client
 
         if voice_client is None:
-            return await interaction.response.send_message('Not connected to a voice channel')
+            await interaction.response.send_message('Not connected to a voice channel')
 
         voice_client.source.volume = volume / 100
         await interaction.response.send_message(f'Changed volume to {volume}%')
@@ -123,7 +101,8 @@ class Music(commands.Cog):
     )
     async def stop(self, interaction: discord.Interaction):
         voice_client: VoiceClient = interaction.guild.voice_client
-        voice_client.stop()
+        if voice_client:
+            voice_client.stop()
         self.songQueue.queue.clear()
         await interaction.response.send_message('Stopped')
 
@@ -162,32 +141,105 @@ class Music(commands.Cog):
         description='Disconnect from the current voice channel'
     )
     async def disconnect(self, interaction: discord.Interaction):
+        await self.__disconnect(interaction)
+
+    async def __disconnect(self, interaction: discord.Interaction, message: str = 'Sayonara'):
         voice_client: VoiceClient = interaction.guild.voice_client
-        voice_client.stop()
+        if voice_client:
+            voice_client.stop()
+            await voice_client.disconnect()
         self.songQueue.queue.clear()
-        await voice_client.disconnect()
-        await interaction.response.send_message('Sayonara, losers')
+
+        try:
+            await interaction.response.send_message(f'{message}, losers')
+        except:
+            print(traceback.format_exc())
+
+    @app_commands.command(
+        name='seppuku',
+        description='Seppuku the funk'
+    )
+    async def seppuku(self, interaction: discord.Interaction):
+        await self.__disconnect(interaction, 'Seppukunara')
+        raise SystemExit
 
     @app_commands.command(
         name='queue',
         description='Display all upcoming songs'
     )
     async def queue(self, interaction: discord.Interaction):
-        message = '`'
+        await self.__queue(interaction, self.songQueue.queue)
+
+    async def __queue(self, interaction: discord.Interaction, queue: list):
+        if not queue:
+            await interaction.response.send_message('Queue is empty')
+            return
+
+        message = ''
         i = 1
+        for item in queue:
+            message += f'{i}. {item.title} - {item.webpage_url}\n'
+            i += 1
 
-        if self.songQueue.empty():
-            return await interaction.response.send_message('Queue is empty')
-        else:
-            for item in self.songQueue.queue:
-                message += f'{i}.{item.title}\n'
-                i += 1
+        try:
+            if len(message) > 1990:
+                chunks = []
+                for index in range(0, len(queue), 15):
+                    start_index = index
+                    end_index = index + 15
+                    chunk = []
+                    for i in range(start_index, min(end_index, len(queue))):
+                        chunk.append(queue[i])
+                    chunks.append(chunk)
 
-            message += '`'
-            return await interaction.response.send_message(message)
+                for chunk in chunks:
+                    chunk_message = ''
+                    j = (chunks.index(chunk) * 15) + 1
+                    for item in chunk:
+                        chunk_message += f'{j}. {item.title} - {item.webpage_url}\n'
+                        j += 1
+                    await self.__send_message(interaction, f'```{chunk_message}```')
+            else:
+                await self.__send_message(interaction, f'```{message}```')
+        except:
+            print(traceback.format_exc())
+            await interaction.response.send_message('I did an queueuepsie... Please try that again...')
 
-    def play_song(self, interaction: discord.Interaction):
+    def __play_song(self, interaction: discord.Interaction):
         if not self.songQueue.empty():
             self.currentSong: Song = self.songQueue.get()
             interaction.guild.voice_client.play(self.currentSong.player,
-                                                after=lambda e: self.play_song(interaction))
+                                                after=lambda e: self.__play_song(interaction))
+
+    async def __prep_entries(self, loop: asyncio.AbstractEventLoop, input: str) -> list:
+        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
+        songs_to_enqueue = []
+        if 'entries' in data:
+            for entry in data['entries']:
+                prep_entry = self.__prep_entry(entry)
+                songs_to_enqueue.append(prep_entry['song'])
+        else:
+            prep_entry = self.__prep_entry(data)
+            songs_to_enqueue.append(prep_entry['song'])
+        songs = {'songs_to_enqueue': songs_to_enqueue}
+        return {**songs, **prep_entry['latest_info']}
+
+    def __prep_entry(self, entry: dict) -> dict:
+        song = Song(entry['title'],
+                    entry['webpage_url'],
+                    discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
+
+        suggest = suggested.spicy_take(entry['title'].split(' '), entry['tags'])
+        return {
+            'song': song,
+            'latest_info': {
+                'url': entry['webpage_url'],
+                'suggest': suggest
+            }
+        }
+
+    async def __send_message(self, interaction: discord.Interaction, message: str):
+        if interaction.response.is_done():
+            await interaction.followup.send(message)
+        else: # from queue command
+            await interaction.response.send_message(message)
