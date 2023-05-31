@@ -22,7 +22,7 @@ def urls(input: str, limit: int) -> list:
 
     return urls
 
-def spicy_take(title_words: str, tags: list) -> str:
+def spicy_take(title_words: list, tags: list) -> str:
     if len(tags) > 0:
         similar_words = []
         for title_word in title_words:
@@ -30,7 +30,7 @@ def spicy_take(title_words: str, tags: list) -> str:
                 if title_word.lower() in tag.lower() or tag.lower() in title_word.lower():
                     similar_words.append(tag)
         if len(similar_words) > 0:
-            return ' '.join(similar_words)
+            return similar_words[0]
         else:
             return tags[0]
     else:
