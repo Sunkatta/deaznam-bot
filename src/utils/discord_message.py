@@ -15,7 +15,7 @@ def chunks(queue: list) -> list:
         chunks.append(chunk)
     return chunks
 
-def formatted(queue: list, start_index: int):
+def formatted(queue: list, start_index: int) -> str:
     message = ''
     for index, item in enumerate(queue, start=start_index):
         title = __text(item.title)
