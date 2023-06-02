@@ -1,17 +1,12 @@
 from youtubesearchpython import VideosSearch
-import urllib.parse
 
-LIMIT = 1
-
-def urls(input: str, limit: int) -> list:
+def urls(input: str, suggest: str, limit: int) -> list:
     if not limit:
-        limit = LIMIT
-    query = urllib.parse.quote(input)
-    search = VideosSearch(query, limit=limit)
-    results = search.result()['result']
+        limit = 1
 
+    results = __search(input, limit)
     if not results:
-        return []
+        results = __search(suggest, limit)
 
     urls = []
 
@@ -21,6 +16,10 @@ def urls(input: str, limit: int) -> list:
         i = i + 1
 
     return urls
+
+def __search(query, limit):
+    search = VideosSearch(query, limit)
+    return search.result()['result']
 
 def spicy_take(title_words: list, tags: list) -> str:
     if len(tags) > 0:

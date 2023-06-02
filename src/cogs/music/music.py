@@ -5,7 +5,7 @@ from discord.ext import commands
 from discord import app_commands
 from queue import Queue
 from cogs.music.song import Song
-from utils import suggested
+from utils import discord_message, suggested
 from utils.config import ytdl, ffmpeg_options
 import traceback
 
@@ -47,7 +47,7 @@ class Music(commands.Cog):
                 elif channel is not None:
                     await channel.connect()
                 else:
-                    await interaction.response.send_message('Join a voice channel, dummy')
+                    await self.__send_message(interaction, 'Join a voice channel, dummy')
                     return
 
             loop = self.bot.loop or asyncio.get_event_loop()
@@ -56,7 +56,7 @@ class Music(commands.Cog):
             songs_to_enqueue = entries_info['songs_to_enqueue']
 
             if limit > 1:
-                urls = suggested.urls(entries_info['suggest'], limit)
+                urls = suggested.urls(input, entries_info['suggest'], limit)
                 for url in urls:
                     if entries_info['url'] == url:
                         continue
@@ -175,32 +175,15 @@ class Music(commands.Cog):
             await interaction.response.send_message('Queue is empty')
             return
 
-        message = ''
-        i = 1
-        for item in queue:
-            message += f'{i}. {item.title} - {item.webpage_url}\n'
-            i += 1
-
+        message = discord_message.formatted(queue, 1)
         try:
             if len(message) > 1990:
-                chunks = []
-                for index in range(0, len(queue), 15):
-                    start_index = index
-                    end_index = index + 15
-                    chunk = []
-                    for i in range(start_index, min(end_index, len(queue))):
-                        chunk.append(queue[i])
-                    chunks.append(chunk)
-
-                for chunk in chunks:
-                    chunk_message = ''
-                    j = (chunks.index(chunk) * 15) + 1
-                    for item in chunk:
-                        chunk_message += f'{j}. {item.title} - {item.webpage_url}\n'
-                        j += 1
-                    await self.__send_message(interaction, f'```{chunk_message}```')
+                chunks = discord_message.chunks(queue)
+                for chunk_index, chunk in enumerate(chunks):
+                    chunk_message = discord_message.formatted(chunk, chunk_index * 15 + 1)
+                    await self.__send_message(interaction, chunk_message)
             else:
-                await self.__send_message(interaction, f'```{message}```')
+                await self.__send_message(interaction, message)
         except:
             print(traceback.format_exc())
             await interaction.response.send_message('I did an queueuepsie... Please try that again...')
