@@ -180,13 +180,13 @@ class Music(commands.Cog):
             if len(message) > 1990:
                 chunks = discord_message.chunks(queue)
                 for chunk_index, chunk in enumerate(chunks):
-                    chunk_message = discord_message.formatted(chunk, chunk_index * 15 + 1)
+                    chunk_message = discord_message.formatted(chunk, chunk_index * discord_message.CHUNK_SIZE + 1)
                     await self.__send_message(interaction, chunk_message)
             else:
                 await self.__send_message(interaction, message)
         except:
             print(traceback.format_exc())
-            await interaction.response.send_message('I did an queueuepsie... Please try that again...')
+            await self.__send_message(interaction, 'I did an queueuepsie... Please try that again...')
 
     def __play_song(self, interaction: discord.Interaction):
         if not self.songQueue.empty():
@@ -204,6 +204,7 @@ class Music(commands.Cog):
         else:
             prep_entry = self.__prep_entry(data)
             songs_to_enqueue.append(prep_entry['song'])
+
         songs = {'songs_to_enqueue': songs_to_enqueue}
         return {**songs, **prep_entry['latest_info']}
 
@@ -215,14 +216,11 @@ class Music(commands.Cog):
         suggest = suggested.spicy_take(entry['title'].split(' '), entry['tags'])
         return {
             'song': song,
-            'latest_info': {
-                'url': entry['webpage_url'],
-                'suggest': suggest
-            }
+            'latest_info': {'url': entry['webpage_url'], 'suggest': suggest}
         }
 
     async def __send_message(self, interaction: discord.Interaction, message: str):
         if interaction.response.is_done():
             await interaction.followup.send(message)
-        else: # from queue command
+        else:
             await interaction.response.send_message(message)
