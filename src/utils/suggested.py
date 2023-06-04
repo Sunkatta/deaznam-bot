@@ -16,7 +16,7 @@ def urls(input: str, suggest: str, limit: int) -> list:
 
     return urls
 
-def __search(query, limit) -> list:
+def __search(query: str, limit: int) -> list:
     search = VideosSearch(query, limit)
     return search.result()['result']
 
