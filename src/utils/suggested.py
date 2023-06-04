@@ -5,11 +5,10 @@ def urls(input: str, suggest: str, limit: int) -> list:
         limit = 1
 
     results = __search(input, limit)
-    if not results:
+    if len(results) == 0:
         results = __search(suggest, limit)
 
     urls = []
-
     i = 0
     while i < len(results):
         urls.append(results[i]['link'])
@@ -17,16 +16,19 @@ def urls(input: str, suggest: str, limit: int) -> list:
 
     return urls
 
-def __search(query, limit):
+def __search(query, limit) -> list:
     search = VideosSearch(query, limit)
     return search.result()['result']
 
 def spicy_take(title_words: list, tags: list) -> str:
     if len(tags) > 0:
         similar_words = []
+        title_words = [s.lower() for s in title_words]
+        tags = [s.lower() for s in tags]
+
         for title_word in title_words:
             for tag in tags:
-                if title_word.lower() in tag.lower() or tag.lower() in title_word.lower():
+                if title_word in tag or tag in title_word:
                     similar_words.append(tag)
         if len(similar_words) > 0:
             return similar_words[0]
