@@ -1,3 +1,4 @@
+from cogs.music.song import Song
 from youtubesearchpython import Comments
 
 CHUNK_SIZE = 10
@@ -18,16 +19,19 @@ def chunks(queue: list) -> list:
 def formatted(queue: list, start_index: int) -> str:
     message = ''
     for index, item in enumerate(queue, start=start_index):
-        title = __text(item.title)
-        try:
-            first_comment = Comments.get(item.webpage_url)['result'][0]
-            content = __text(first_comment['content'])
-            likes = first_comment['votes']['simpleText'] + ' 👍'
-        except:
-            content = 'No comment'
-            likes = 'Failed'
-        message += f'{index}. {title} > {content} < {likes}\n'
+        message += f'{index}. {full_text(item)}\n'
     return f'```{message}```'
 
-def __text(text: str) -> str:
+def full_text(item: Song) -> str:
+    title = __comment_text(item.title)
+    try:
+        first_comment = Comments.get(item.webpage_url)['result'][0]
+        content = __comment_text(first_comment['content'])
+        likes = first_comment['votes']['simpleText'] + ' 👍'
+    except:
+        content = 'No comment'
+        likes = 'Failed'
+    return f'{title} > {content} < {likes}'
+
+def __comment_text(text: str) -> str:
     return text[:TEXT_SIZE] + ('...' if len(text) > TEXT_SIZE else '')
