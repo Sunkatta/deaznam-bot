@@ -1,12 +1,13 @@
 from cogs.music.song import Song
 
 CHUNK_SIZE = 15
-TEXT_SIZE = 79
+TEXT_SIZE = 78
 EXAMPLE_URL_LENGTH = 43
 SEPERATOR = ' - '
 DELIMITER = '```'
 ELLIPSIS = '...'
-MAX_MESSAGE_SIZE = len(DELIMITER) + ((len('10. ') + TEXT_SIZE + len(ELLIPSIS) + len(SEPERATOR) + EXAMPLE_URL_LENGTH) * CHUNK_SIZE) + len(DELIMITER) # 1986
+NEW_LINE = '\n'
+MAX_MESSAGE_SIZE = len(DELIMITER) + ((len('10. ') + TEXT_SIZE + len(ELLIPSIS) + len(SEPERATOR) + EXAMPLE_URL_LENGTH + len(NEW_LINE)) * CHUNK_SIZE) + len(DELIMITER) # 1986
 
 def chunks(queue: list) -> list:
     chunks = []
@@ -22,7 +23,7 @@ def chunks(queue: list) -> list:
 def formatted(queue: list, start_index: int) -> str:
     message = ''
     for index, item in enumerate(queue, start=start_index):
-        message += f'{index}. {full_text(item)}\n'
+        message += f'{index}. {full_text(item)}{NEW_LINE}'
     return f'{DELIMITER}{message}{DELIMITER}'
 
 def full_text(item: Song) -> str:
