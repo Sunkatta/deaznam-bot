@@ -1,12 +1,12 @@
 from cogs.music.song import Song
 
 CHUNK_SIZE = 15
-TEXT_SIZE = 79
+TEXT_SIZE = 74
 EXAMPLE_URL_LENGTH = 43
 SEPERATOR = ' - '
 DELIMITER = '```'
 ELLIPSIS = '...'
-MAX_MESSAGE_SIZE = len(DELIMITER) + ((len('10. ') + TEXT_SIZE + len(ELLIPSIS) + len(SEPERATOR) + EXAMPLE_URL_LENGTH) * CHUNK_SIZE) + len(DELIMITER) # 1986
+MAX_MESSAGE_SIZE = ((len(DELIMITER) + len('10. ') + TEXT_SIZE + len(ELLIPSIS) + len(SEPERATOR) + EXAMPLE_URL_LENGTH + len(DELIMITER)) * CHUNK_SIZE) # 1995
 
 def chunks(queue: list) -> list:
     chunks = []
