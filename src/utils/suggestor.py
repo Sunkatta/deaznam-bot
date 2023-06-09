@@ -1,9 +1,6 @@
 from youtubesearchpython import VideosSearch
 
-def urls(input: str, suggest: str, limit: int) -> list:
-    if not limit:
-        limit = 1
-
+def get_urls(input: str, suggest: str, limit: int) -> list:
     results = __search(input, limit)
     if len(results) == 0:
         results = __search(suggest, limit)
@@ -20,7 +17,7 @@ def __search(query: str, limit: int) -> list:
     search = VideosSearch(query, limit)
     return search.result()['result']
 
-def spicy_take(title_words: list, tags: list) -> str:
+def get_suggestions(title_words: list, tags: list) -> str:
     if len(tags) > 0:
         similar_words = []
         title_words = [s.lower() for s in title_words]

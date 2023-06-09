@@ -1,9 +1,12 @@
 from cogs.music.song import Song
-from youtubesearchpython import Comments
 
-CHUNK_SIZE = 10
-TEXT_SIZE = 92
-# Max message size: ((2 + 3 + 3) + (92 * 2) + (2 * 3)) * 10 = 1980
+CHUNK_SIZE = 15
+TEXT_SIZE = 79
+EXAMPLE_URL_LENGTH = 43
+SEPERATOR = ' - '
+DELIMITER = '```'
+ELLIPSIS = '...'
+MAX_MESSAGE_SIZE = len(DELIMITER) + ((len('10. ') + TEXT_SIZE + len(ELLIPSIS) + len(SEPERATOR) + EXAMPLE_URL_LENGTH) * CHUNK_SIZE) + len(DELIMITER) # 1986
 
 def chunks(queue: list) -> list:
     chunks = []
@@ -20,18 +23,11 @@ def formatted(queue: list, start_index: int) -> str:
     message = ''
     for index, item in enumerate(queue, start=start_index):
         message += f'{index}. {full_text(item)}\n'
-    return f'```{message}```'
+    return f'{DELIMITER}{message}{DELIMITER}'
 
 def full_text(item: Song) -> str:
-    title = __comment_text(item.title)
-    try:
-        first_comment = Comments.get(item.webpage_url)['result'][0]
-        content = __comment_text(first_comment['content'])
-        likes = first_comment['votes']['simpleText'] + ' 👍'
-    except:
-        content = 'No comment'
-        likes = 'Failed'
-    return f'{title} > {content} < {likes}'
+    title = __sliced_text(item.title)
+    return f'{title}{SEPERATOR}{item.webpage_url}'
 
-def __comment_text(text: str) -> str:
-    return text[:TEXT_SIZE] + ('...' if len(text) > TEXT_SIZE else '')
+def __sliced_text(text: str) -> str:
+    return text[:TEXT_SIZE] + (ELLIPSIS if len(text) > TEXT_SIZE else '')

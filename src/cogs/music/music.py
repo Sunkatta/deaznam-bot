@@ -5,7 +5,7 @@ from discord.ext import commands
 from discord import app_commands
 from queue import Queue
 from cogs.music.song import Song
-from utils import discord_message, suggested
+from utils import discord_message, suggestor
 from utils.config import ytdl, ffmpeg_options
 import traceback
 
@@ -56,7 +56,7 @@ class Music(commands.Cog):
             songs_to_enqueue = entries_info['songs_to_enqueue']
 
             if limit > 1:
-                urls = suggested.urls(input, entries_info['suggest'], limit)
+                urls = suggestor.get_urls(input, entries_info['suggest'], limit)
                 for url in urls:
                     if entries_info['url'] == url:
                         continue
@@ -177,7 +177,7 @@ class Music(commands.Cog):
 
         message = discord_message.formatted(queue, 1)
         try:
-            if len(message) > 1990:
+            if len(message) > discord_message.MAX_MESSAGE_SIZE:
                 chunks = discord_message.chunks(queue)
                 for chunk_index, chunk in enumerate(chunks):
                     chunk_message = discord_message.formatted(chunk, chunk_index * discord_message.CHUNK_SIZE + 1)
@@ -213,7 +213,7 @@ class Music(commands.Cog):
                     entry['webpage_url'],
                     discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
 
-        suggest = suggested.spicy_take(entry['title'].split(' '), entry['tags'])
+        suggest = suggestor.get_suggestions(entry['title'].split(' '), entry['tags'])
         return {
             'song': song,
             'latest_info': {'url': entry['webpage_url'], 'suggest': suggest}
