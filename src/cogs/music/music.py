@@ -69,12 +69,12 @@ class Music(commands.Cog):
                 self.__play_song(interaction)
 
                 if self.songQueue.qsize() == 0:
-                    await interaction.followup.send(f'Now playing: `{discord_message.full_text(self.currentSong)}`')
+                    await interaction.followup.send(f'Now playing: {discord_message.full_text(self.currentSong)}')
                 else:
                     await interaction.followup.send(f'Queued {str(len(songs_to_enqueue))} songs')
                     await self.__queue(interaction, songs_to_enqueue)
             elif self.songQueue.qsize() == 1 and len(songs_to_enqueue) == 1:
-                await interaction.followup.send(f'Next up: `{discord_message.full_text(songs_to_enqueue[0])}`')
+                await interaction.followup.send(f'Next up: {discord_message.full_text(songs_to_enqueue[0])}')
             else:
                 await interaction.followup.send(f'Queued {str(len(songs_to_enqueue))} songs')
                 await self.__queue(interaction, songs_to_enqueue)
