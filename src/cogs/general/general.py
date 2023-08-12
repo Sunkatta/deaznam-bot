@@ -32,9 +32,7 @@ class General(commands.Cog):
 
                 if voice.is_playing() == False:
                     await voice.disconnect()
-                    guild_name = after.channel.guild.name if (after.channel and after.channel.guild) else 'No Guild'
-                    channel_name = after.channel.name if after.channel else 'No Channel'
-                    print(f'Disconnected due to inactivity from Server:{guild_name}, Channel: {channel_name}')
+                    print(f'Disconnected due to inactivity from Server: {after.channel.guild.name if after.channel.guild else "No Guild"}, Channel: {after.channel.name}')
 
                     break
 
