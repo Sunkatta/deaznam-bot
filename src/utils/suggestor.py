@@ -4,14 +4,7 @@ def get_urls(input: str, suggest: str, limit: int) -> list:
     results = __search(input, limit)
     if len(results) == 0:
         results = __search(suggest, limit)
-
-    urls = []
-    i = 0
-    while i < len(results):
-        urls.append(results[i]['link'])
-        i = i + 1
-
-    return urls
+    return [result['link'] for result in results]
 
 def __search(query: str, limit: int) -> list:
     search = VideosSearch(query, limit)
