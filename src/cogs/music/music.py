@@ -195,7 +195,6 @@ class Music(commands.Cog):
                                                 after=lambda e: self.__play_song(interaction))
 
     async def __prep_entries(self, loop: asyncio.AbstractEventLoop, input: str) -> list:
-        await asyncio.sleep(5)
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
         songs_to_enqueue = []
         if 'entries' in data:
