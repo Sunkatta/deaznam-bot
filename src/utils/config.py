@@ -15,9 +15,9 @@ ytdl_format_options = {
     'source_address': '0.0.0.0'
 }
 
+ytdl = yt_dlp.YoutubeDL(ytdl_format_options)
+
 ffmpeg_options = {
    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-   'options': '-vn -v debug'
+   'options': '-vn'
 }
-
-ytdl = yt_dlp.YoutubeDL(ytdl_format_options)
