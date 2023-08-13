@@ -19,17 +19,13 @@ def __search(query: str, limit: int) -> list:
 
 def get_suggestions(title_words: list, tags: list) -> str:
     if len(tags) > 0:
-        similar_words = []
         title_words = [s.lower() for s in title_words]
         tags = [s.lower() for s in tags]
 
         for title_word in title_words:
             for tag in tags:
                 if title_word in tag or tag in title_word:
-                    similar_words.append(tag)
-        if len(similar_words) > 0:
-            return similar_words[0]
-        else:
-            return tags[0]
+                    return tag
+        return tags[0]
     else:
         return ' '.join(title_words[:2])
