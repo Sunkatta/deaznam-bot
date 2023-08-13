@@ -211,7 +211,7 @@ class Music(commands.Cog):
     def __prep_entry(self, entry: dict) -> dict:
         song = Song(entry['title'],
                     entry['webpage_url'],
-                    discord.FFmpegPCMAudio(entry['url'], stderr=open('utils/error.log', 'a'), **ffmpeg_options))
+                    discord.FFmpegPCMAudio(entry['url'], stderr=open('error.log', 'a'), **ffmpeg_options))
 
         suggest = suggestor.get_suggestions(entry['title'].split(' '), entry['tags'])
         return {
