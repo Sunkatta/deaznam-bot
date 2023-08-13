@@ -10,6 +10,7 @@ ytdl_format_options = {
     'logtostderr': False,
     'quiet': True,
     'no_warnings': True,
+    # 'verbose': True, # uncomment for logs 
     'default_search': 'auto',
     # bind to ipv4 since ipv6 addresses cause issues sometimes
     'source_address': '0.0.0.0'
