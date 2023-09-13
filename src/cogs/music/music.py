@@ -5,7 +5,7 @@ from discord.ext import commands
 from discord import app_commands
 from queue import Queue
 from cogs.music.song import Song
-from utils import discord_message, suggestor
+from utils import discord_message, suggestor, capture_ffmpeg
 from utils.config import ytdl, ffmpeg_options
 import traceback
 
@@ -209,9 +209,11 @@ class Music(commands.Cog):
         return {**songs, **prep_entry['latest_info']}
 
     def __prep_entry(self, entry: dict) -> dict:
+        capture_ffmpeg.capture(entry['url'])
+
         song = Song(entry['title'],
                     entry['webpage_url'],
-                    discord.FFmpegPCMAudio(entry['url'], stderr=open('error.log', 'a'), **ffmpeg_options))
+                    discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
 
         suggest = suggestor.get_suggestions(entry['title'].split(' '), entry['tags'])
         return {
