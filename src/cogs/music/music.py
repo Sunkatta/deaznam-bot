@@ -199,8 +199,9 @@ class Music(commands.Cog):
         songs_to_enqueue = []
         if 'entries' in data:
             for entry in data['entries']:
-                prep_entry = self.__prep_entry(entry)
-                songs_to_enqueue.append(prep_entry['song'])
+                if entry is not None:
+                    prep_entry = self.__prep_entry(entry)
+                    songs_to_enqueue.append(prep_entry['song'])
         else:
             prep_entry = self.__prep_entry(data)
             songs_to_enqueue.append(prep_entry['song'])
