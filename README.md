@@ -2,7 +2,7 @@
 A Discord bot whose main goal is to be integrated with a few music providers' APIs. More features might be added later.
 
 # Installation
-1. To install the required dependencies, please run `pip install -r requirements.txt`.
+1. To install the required dependencies, please go to `cd src` and run `cd pip install --upgrade -r requirements.txt`.
 2. You also need FFmpeg is required by reaching https://www.gyan.dev/ffmpeg/builds/
 3. Download `ffmpeg-git-full.7z` archive
 4. Then extract it and put in your main disk folder with the name `FFmpeg`
