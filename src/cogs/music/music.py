@@ -9,6 +9,7 @@ from utils import discord_message, suggestor, capture_ffmpeg
 from utils.config import ytdl, ffmpeg_options
 import traceback
 
+
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
@@ -56,12 +57,14 @@ class Music(commands.Cog):
             songs_to_enqueue = entries_info['songs_to_enqueue']
 
             if limit > 1:
-                urls = suggestor.get_urls(input, entries_info['suggest'], limit)
+                urls = suggestor.get_urls(
+                    input, entries_info['suggest'], limit)
                 for url in urls:
                     if entries_info['url'] == url:
                         continue
                     suggest_entries_info = await self.__prep_entries(loop, url)
-                    songs_to_enqueue.extend(suggest_entries_info['songs_to_enqueue'])
+                    songs_to_enqueue.extend(
+                        suggest_entries_info['songs_to_enqueue'])
 
             list(map(self.songQueue.put, songs_to_enqueue))
 
@@ -180,7 +183,8 @@ class Music(commands.Cog):
             if len(message) > discord_message.MAX_MESSAGE_SIZE:
                 chunks = discord_message.chunks(queue)
                 for chunk_index, chunk in enumerate(chunks):
-                    chunk_message = discord_message.formatted(chunk, chunk_index * discord_message.CHUNK_SIZE + 1)
+                    chunk_message = discord_message.formatted(
+                        chunk, chunk_index * discord_message.CHUNK_SIZE + 1)
                     await self.__send_message(interaction, chunk_message)
             else:
                 await self.__send_message(interaction, message)
@@ -216,7 +220,8 @@ class Music(commands.Cog):
                     entry['webpage_url'],
                     discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
 
-        suggest = suggestor.get_suggestions(entry['title'].split(' '), entry['tags'])
+        suggest = suggestor.get_suggestions(
+            entry['title'].split(' '), entry['tags'])
         return {
             'song': song,
             'latest_info': {'url': entry['webpage_url'], 'suggest': suggest}
@@ -227,3 +232,7 @@ class Music(commands.Cog):
             await interaction.followup.send(message)
         else:
             await interaction.response.send_message(message)
+
+
+async def setup(bot: commands.Bot):
+    await bot.add_cog(Music(bot))

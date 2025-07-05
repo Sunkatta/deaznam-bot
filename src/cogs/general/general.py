@@ -1,8 +1,6 @@
 import discord
 import asyncio
 from discord.ext import commands
-from discord.ext.commands import Greedy, Context
-from typing import Literal, Optional
 from discord import app_commands
 
 
@@ -32,45 +30,13 @@ class General(commands.Cog):
 
                 if voice.is_playing() == False:
                     await voice.disconnect()
-                    guild_name = after.channel.guild.name if (after.channel and after.channel.guild) else 'No Guild'
+                    guild_name = after.channel.guild.name if (
+                        after.channel and after.channel.guild) else 'No Guild'
                     channel_name = after.channel.name if after.channel else 'No Channel'
-                    print(f'Disconnected due to inactivity from Server:{guild_name}, Channel: {channel_name}')
+                    print(
+                        f'Disconnected due to inactivity from Server:{guild_name}, Channel: {channel_name}')
 
                     break
-
-    # TODO: fix
-    @app_commands.command()
-    @commands.guild_only()
-    @commands.is_owner()
-    async def sync(ctx: Context, guilds: Greedy[discord.Object], spec: Optional[Literal["~", "*", "^"]] = None) -> None:
-        if not guilds:
-            if spec == "~":
-                synced = await ctx.bot.tree.sync(guild=ctx.guild)
-            elif spec == "*":
-                ctx.bot.tree.copy_global_to(guild=ctx.guild)
-                synced = await ctx.bot.tree.sync(guild=ctx.guild)
-            elif spec == "^":
-                ctx.bot.tree.clear_commands(guild=ctx.guild)
-                await ctx.bot.tree.sync(guild=ctx.guild)
-                synced = []
-            else:
-                synced = await ctx.bot.tree.sync()
-
-            await ctx.send(
-                f"Synced {len(synced)} commands {'globally' if spec is None else 'to the current guild.'}"
-            )
-            return
-
-        ret = 0
-        for guild in guilds:
-            try:
-                await ctx.bot.tree.sync(guild=guild)
-            except discord.HTTPException:
-                pass
-            else:
-                ret += 1
-
-        await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
     @app_commands.command(
         name='say',
@@ -81,3 +47,7 @@ class General(commands.Cog):
             await interaction.response.send_message(input)
         except:
             await interaction.response.send_message('My creators are dumbasses and did not teach me how to repeat this...')
+
+
+async def setup(bot: commands.Bot):
+    await bot.add_cog(General(bot))
