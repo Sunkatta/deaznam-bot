@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import AsyncMock, MagicMock
-from src.cogs.general.general import General
+from cogs.general.general import General
 
 
-class SayTests(unittest.IsolatedAsyncioTestCase):
+class SayTest(unittest.IsolatedAsyncioTestCase):
     async def test_should_repeat_the_phrase(self):
         # Arrange
         input = "Hello World!"
