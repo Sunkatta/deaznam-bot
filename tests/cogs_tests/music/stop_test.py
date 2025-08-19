@@ -33,7 +33,7 @@ class StopTest(unittest.IsolatedAsyncioTestCase):
         mock_interaction.response.send_message.assert_called_once_with(
             'Stopped')
 
-    async def test_shoul_successfully_clear_the_queue_and_not_stop_the_player_when_not_connected_to_a_channel(self):
+    async def test_should_successfully_clear_the_queue_and_not_stop_the_player_when_not_connected_to_a_channel(self):
         # Arrange
         first_song_title = "Never Gonna Give You Up"
         first_song_url = "www.rickroll.com"
