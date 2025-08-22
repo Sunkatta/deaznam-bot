@@ -19,3 +19,13 @@ The bot can be run either from the terminal or in your favorite IDE (e.g. VS Cod
 This default command will run the local bot instance using the default `.env` file. You can use a command argument to specify a different `.env` file, which can run a different bot instance. E.g., to use the `.env.example` file:
 
 `python main.py --env example`
+
+# Running the unit tests
+Unit tests are implemented using the `unittest` framework. To run them, execute the following command at the root of the project:
+
+`python -m unittest discover -s .\tests -p "*_test.py" -v`
+
+Alternatively, the tests can be run directly from an IDE. For VS Code, please check the following links on how to perform the setup:
+
+- [Python Testing in VS Code](https://code.visualstudio.com/docs/python/testing)
+- [Python Unit Testing Tutorial](https://www.youtube.com/watch?v=w8t3CeHHGp4)

@@ -94,6 +94,7 @@ class Music(commands.Cog):
 
         if voice_client is None:
             await interaction.response.send_message('Not connected to a voice channel')
+            return
 
         voice_client.source.volume = volume / 100
         await interaction.response.send_message(f'Changed volume to {volume}%')
