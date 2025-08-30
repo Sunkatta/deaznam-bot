@@ -1,20 +1,19 @@
 import discord
-import asyncio
 from discord.voice_client import VoiceClient
 from discord.ext import commands
 from discord import app_commands
-from queue import Queue
-from cogs.music.song import Song
-from utils import discord_message, suggestor, capture_ffmpeg
-from utils.config import ytdl, ffmpeg_options
+from models.song import Song
+from services.music_service import MusicService
+from utils import discord_message
+from utils.config import ffmpeg_options
 import traceback
 
 
 class Music(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: commands.Bot, music_service: MusicService) -> None:
         self.bot = bot
         self.currentSong: Song = None
-        self.songQueue = Queue()
+        self.music_service = music_service
 
     @app_commands.command(
         name='join',
@@ -22,13 +21,16 @@ class Music(commands.Cog):
     )
     async def join(self, interaction: discord.Interaction, channel: discord.VoiceChannel):
         try:
+            await interaction.response.defer()
             voice_client: VoiceClient = interaction.guild.voice_client
 
             if voice_client is not None:
                 return await voice_client.move_to(channel)
 
             await channel.connect()
-            await interaction.response.send_message(f'Joined channel: `{channel.name}`')
+            self.music_service.add_music_player(str(interaction.guild_id))
+            await self.__send_message(
+                interaction, f'Joined channel: `{channel.name}`')
         except:
             print(traceback.format_exc())
             await interaction.response.send_message('I did an whoopsie... Please try that again...')
@@ -51,36 +53,21 @@ class Music(commands.Cog):
                     await self.__send_message(interaction, 'Join a voice channel, dummy')
                     return
 
-            loop = self.bot.loop or asyncio.get_event_loop()
-
-            entries_info = await self.__prep_entries(loop, input)
-            songs_to_enqueue = entries_info['songs_to_enqueue']
-
-            if limit > 1:
-                urls = suggestor.get_urls(
-                    input, entries_info['suggest'], limit)
-                for url in urls:
-                    if entries_info['url'] == url:
-                        continue
-                    suggest_entries_info = await self.__prep_entries(loop, url)
-                    songs_to_enqueue.extend(
-                        suggest_entries_info['songs_to_enqueue'])
-
-            list(map(self.songQueue.put, songs_to_enqueue))
+            (song_queue, songs_to_enqueue) = await self.music_service.play(str(interaction.guild_id), input, limit)
 
             if not interaction.guild.voice_client.is_playing():
                 self.__play_song(interaction)
 
-                if self.songQueue.qsize() == 0:
+                if song_queue.qsize() == 0:
                     await interaction.followup.send(f'Now playing: {discord_message.full_text(self.currentSong)}')
                 else:
                     await interaction.followup.send(f'Queued {str(len(songs_to_enqueue))} songs')
-                    await self.__queue(interaction, songs_to_enqueue)
-            elif self.songQueue.qsize() == 1 and len(songs_to_enqueue) == 1:
+                    await self.__display_queue(interaction, songs_to_enqueue)
+            elif song_queue.qsize() == 1 and len(songs_to_enqueue) == 1:
                 await interaction.followup.send(f'Next up: {discord_message.full_text(songs_to_enqueue[0])}')
             else:
                 await interaction.followup.send(f'Queued {str(len(songs_to_enqueue))} songs')
-                await self.__queue(interaction, songs_to_enqueue)
+                await self.__display_queue(interaction, songs_to_enqueue)
         except:
             print(traceback.format_exc())
             await interaction.followup.send('I did an whoopsie... Please try that again...')
@@ -107,7 +94,7 @@ class Music(commands.Cog):
         voice_client: VoiceClient = interaction.guild.voice_client
         if voice_client:
             voice_client.stop()
-        self.songQueue.queue.clear()
+        self.music_service.remove_music_player_by_id(str(interaction.guild_id))
         await interaction.response.send_message('Stopped')
 
     @app_commands.command(
@@ -115,11 +102,15 @@ class Music(commands.Cog):
         description='Skip the current song'
     )
     async def skip(self, interaction: discord.Interaction):
-        if self.songQueue.empty():
+        queue = self.music_service.get_song_queue_by_music_player_id(
+            str(interaction.guild_id))
+
+        if queue is None or queue.empty():
             await interaction.response.send_message("Can't skip the void, bozo")
         else:
             voice_client: VoiceClient = interaction.guild.voice_client
             voice_client.stop()
+            self.music_service.skip_song(str(interaction.guild_id))
             await interaction.response.send_message('Skipped')
 
     @app_commands.command(
@@ -145,42 +136,38 @@ class Music(commands.Cog):
         description='Disconnect from the current voice channel'
     )
     async def disconnect(self, interaction: discord.Interaction):
-        await self.__disconnect(interaction)
-
-    async def __disconnect(self, interaction: discord.Interaction, message: str = 'Sayonara'):
-        voice_client: VoiceClient = interaction.guild.voice_client
-        if voice_client:
-            voice_client.stop()
-            await voice_client.disconnect()
-        self.songQueue.queue.clear()
-
         try:
-            await interaction.response.send_message(f'{message}, losers')
+            await interaction.response.defer()
+
+            voice_client: VoiceClient = interaction.guild.voice_client
+
+            if voice_client:
+                voice_client.stop()
+                await voice_client.disconnect()
+
+            self.music_service.remove_music_player_by_id(
+                str(interaction.guild_id))
+            await self.__send_message(interaction, 'Sayonara, losers')
         except:
             print(traceback.format_exc())
-
-    @app_commands.command(
-        name='seppuku',
-        description='Seppuku the funk'
-    )
-    async def seppuku(self, interaction: discord.Interaction):
-        await self.__disconnect(interaction, 'Seppukunara')
-        raise SystemExit
 
     @app_commands.command(
         name='queue',
         description='Display all upcoming songs'
     )
     async def queue(self, interaction: discord.Interaction):
-        await self.__queue(interaction, self.songQueue.queue)
+        song_queue = self.music_service.get_song_queue_by_music_player_id(
+            str(interaction.guild_id))
 
-    async def __queue(self, interaction: discord.Interaction, queue: list):
-        if not queue:
-            await interaction.response.send_message('Queue is empty')
-            return
+        await self.__display_queue(interaction, list(song_queue.queue))
 
-        message = discord_message.formatted(queue, 1)
+    async def __display_queue(self, interaction: discord.Interaction, queue: list):
         try:
+            if not queue:
+                await interaction.response.send_message('Queue is empty')
+                return
+
+            message = discord_message.formatted(queue, 1)
             if len(message) > discord_message.MAX_MESSAGE_SIZE:
                 chunks = discord_message.chunks(queue)
                 for chunk_index, chunk in enumerate(chunks):
@@ -194,39 +181,13 @@ class Music(commands.Cog):
             await self.__send_message(interaction, 'I did an queueuepsie... Please try that again...')
 
     def __play_song(self, interaction: discord.Interaction):
-        if not self.songQueue.empty():
-            self.currentSong: Song = self.songQueue.get()
-            interaction.guild.voice_client.play(self.currentSong.player,
-                                                after=lambda e: self.__play_song(interaction))
+        music_player = self.music_service.get_music_player_by_id(
+            str(interaction.guild_id))
 
-    async def __prep_entries(self, loop: asyncio.AbstractEventLoop, input: str) -> list:
-        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
-        songs_to_enqueue = []
-        if 'entries' in data:
-            for entry in data['entries']:
-                if entry is not None:
-                    prep_entry = self.__prep_entry(entry)
-                    songs_to_enqueue.append(prep_entry['song'])
-        else:
-            prep_entry = self.__prep_entry(data)
-            songs_to_enqueue.append(prep_entry['song'])
-
-        songs = {'songs_to_enqueue': songs_to_enqueue}
-        return {**songs, **prep_entry['latest_info']}
-
-    def __prep_entry(self, entry: dict) -> dict:
-        capture_ffmpeg.capture(entry['url'])
-
-        song = Song(entry['title'],
-                    entry['webpage_url'],
-                    discord.FFmpegPCMAudio(entry['url'], **ffmpeg_options))
-
-        suggest = suggestor.get_suggestions(
-            entry['title'].split(' '), entry['tags'])
-        return {
-            'song': song,
-            'latest_info': {'url': entry['webpage_url'], 'suggest': suggest}
-        }
+        if not music_player.get_songs_in_queue().empty():
+            self.currentSong: Song = music_player.get_next_song()
+            interaction.guild.voice_client.play(discord.FFmpegPCMAudio(self.currentSong.url, **ffmpeg_options),
+                                                after=lambda e: music_player.get_next_song())
 
     async def __send_message(self, interaction: discord.Interaction, message: str):
         if interaction.response.is_done():
@@ -236,4 +197,7 @@ class Music(commands.Cog):
 
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(Music(bot))
+    if not hasattr(bot, "music_service"):
+        bot.music_service = MusicService()
+
+    await bot.add_cog(Music(bot, bot.music_service))
