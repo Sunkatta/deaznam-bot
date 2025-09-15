@@ -110,7 +110,6 @@ class Music(commands.Cog):
         else:
             voice_client: VoiceClient = interaction.guild.voice_client
             voice_client.stop()
-            self.music_service.skip_song(str(interaction.guild_id))
             await interaction.response.send_message('Skipped')
 
     @app_commands.command(
@@ -159,7 +158,7 @@ class Music(commands.Cog):
         song_queue = self.music_service.get_song_queue_by_music_player_id(
             str(interaction.guild_id))
 
-        await self.__display_queue(interaction, list(song_queue.queue))
+        await self.__display_queue(interaction, list(song_queue.queue if song_queue is not None else []))
 
     async def __display_queue(self, interaction: discord.Interaction, queue: list):
         try:
@@ -187,7 +186,7 @@ class Music(commands.Cog):
         if not music_player.get_songs_in_queue().empty():
             self.currentSong: Song = music_player.get_next_song()
             interaction.guild.voice_client.play(discord.FFmpegPCMAudio(self.currentSong.url, **ffmpeg_options),
-                                                after=lambda e: music_player.get_next_song())
+                                                after=lambda e: self.__play_song(interaction))
 
     async def __send_message(self, interaction: discord.Interaction, message: str):
         if interaction.response.is_done():
