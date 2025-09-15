@@ -2,7 +2,6 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock
 
 from cogs.music.music import Music
-from models.music_player import MusicPlayer
 from models.song import Song
 from services.music_service import MusicService
 
