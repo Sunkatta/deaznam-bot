@@ -36,6 +36,7 @@ class DisconnectTest(unittest.IsolatedAsyncioTestCase):
 
         # Assert
         self.assertEqual(music_player.song_queue.qsize(), 0)
+        self.assertEqual(len(mock_music_service.music_players), 0)
         mock_interaction.guild.voice_client.stop.assert_called_once()
         mock_interaction.guild.voice_client.disconnect.assert_called_once()
         mock_interaction.followup.send.assert_called_once_with(
@@ -68,5 +69,6 @@ class DisconnectTest(unittest.IsolatedAsyncioTestCase):
 
         # Assert
         self.assertEqual(music_player.song_queue.qsize(), 0)
+        self.assertEqual(len(mock_music_service.music_players), 0)
         mock_interaction.followup.send.assert_called_once_with(
             'Sayonara, losers')
