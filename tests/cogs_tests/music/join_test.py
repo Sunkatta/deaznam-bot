@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import AsyncMock, MagicMock
 from cogs.music.music import Music
-from services.music_service import MusicService
 
 
 class JoinTest(unittest.IsolatedAsyncioTestCase):
@@ -23,7 +22,7 @@ class JoinTest(unittest.IsolatedAsyncioTestCase):
         mock_channel.connect = AsyncMock()
         mock_channel.name = channel_name
 
-        mock_music_service = MusicService()
+        mock_music_service = MagicMock()
 
         music_cog = Music(mock_bot, mock_music_service)
 
@@ -31,7 +30,7 @@ class JoinTest(unittest.IsolatedAsyncioTestCase):
         await music_cog.join.callback(music_cog, mock_interaction, mock_channel)
 
         # Assert
-        self.assertEqual(len(mock_music_service.music_players), 1)
+        mock_music_service.add_music_player.assert_called_once()
         mock_channel.connect.assert_called_once()
         mock_interaction.followup.send.assert_called_once_with(
             f'Joined channel: `{channel_name}`')
@@ -48,7 +47,7 @@ class JoinTest(unittest.IsolatedAsyncioTestCase):
 
         mock_channel = MagicMock()
 
-        mock_music_service = MusicService()
+        mock_music_service = MagicMock()
 
         music_cog = Music(mock_bot, mock_music_service)
 
@@ -57,7 +56,7 @@ class JoinTest(unittest.IsolatedAsyncioTestCase):
 
         # Assert
         mock_interaction.guild.voice_client.move_to.assert_called_once()
-        self.assertEqual(len(mock_music_service.music_players), 0)
+        self.assertEqual(mock_music_service.add_music_service.call_count, 0)
         self.assertEqual(mock_channel.connect.call_count, 0)
         self.assertEqual(mock_interaction.followup.send.call_count, 0)
         self.assertEqual(mock_interaction.response.send_message.call_count, 0)
@@ -79,7 +78,7 @@ class JoinTest(unittest.IsolatedAsyncioTestCase):
             side_effect=Exception("fail"))
         mock_channel.name = channel_name
 
-        mock_music_service = MusicService()
+        mock_music_service = MagicMock()
 
         music_cog = Music(mock_bot, mock_music_service)
 
@@ -90,7 +89,7 @@ class JoinTest(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(Exception):
             mock_channel.side_effect[0]
 
-        self.assertEqual(len(mock_music_service.music_players), 0)
+        self.assertEqual(mock_music_service.add_music_service.call_count, 0)
         self.assertEqual(mock_interaction.followup.send.call_count, 0)
         self.assertEqual(mock_interaction.response.send_message.call_count, 1)
         mock_interaction.response.send_message.assert_called_with(
@@ -103,6 +102,7 @@ class JoinTest(unittest.IsolatedAsyncioTestCase):
         mock_interaction.guild.voice_client = MagicMock()
         mock_interaction.guild.voice_client.move_to = AsyncMock(
             side_effect=Exception("fail"))
+        mock_interaction.response.defer = AsyncMock()
         mock_interaction.response.send_message = AsyncMock()
 
         mock_bot = MagicMock()
@@ -110,7 +110,7 @@ class JoinTest(unittest.IsolatedAsyncioTestCase):
 
         mock_channel = MagicMock()
 
-        mock_music_service = MusicService()
+        mock_music_service = MagicMock()
 
         music_cog = Music(mock_bot, mock_music_service)
 
@@ -121,8 +121,42 @@ class JoinTest(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(Exception):
             mock_interaction.side_effect[0]
 
-        self.assertEqual(len(mock_music_service.music_players), 0)
+        self.assertEqual(mock_music_service.add_music_service.call_count, 0)
         self.assertEqual(mock_interaction.followup.send.call_count, 0)
+        self.assertEqual(mock_interaction.response.send_message.call_count, 1)
+        mock_interaction.response.send_message.assert_called_with(
+            'I did an whoopsie... Please try that again...'
+        )
+
+    async def test_should_send_default_message_when_music_service_add_music_player_throws_exception(self):
+        # Arrange
+        player_id = "1"
+        channel_name = "Cool Channel"
+
+        mock_interaction = MagicMock()
+        mock_interaction.guild_id = player_id
+        mock_interaction.guild.voice_client = None
+        mock_interaction.response.defer = AsyncMock()
+        mock_interaction.response.send_message = AsyncMock()
+
+        mock_bot = MagicMock()
+        mock_bot.loop = None
+
+        mock_channel = MagicMock()
+        mock_channel.connect = AsyncMock()
+        mock_channel.name = channel_name
+
+        mock_music_service = MagicMock()
+        mock_music_service.add_music_player = MagicMock(
+            side_effect=Exception("fail"))
+
+        music_cog = Music(mock_bot, mock_music_service)
+
+        # Act
+        await music_cog.join.callback(music_cog, mock_interaction, mock_channel)
+
+        # Assert
+        mock_channel.connect.assert_called_once()
         self.assertEqual(mock_interaction.response.send_message.call_count, 1)
         mock_interaction.response.send_message.assert_called_with(
             'I did an whoopsie... Please try that again...'
@@ -148,7 +182,7 @@ class JoinTest(unittest.IsolatedAsyncioTestCase):
         mock_channel.connect = AsyncMock()
         mock_channel.name = channel_name
 
-        mock_music_service = MusicService()
+        mock_music_service = MagicMock()
 
         music_cog = Music(mock_bot, mock_music_service)
 
@@ -159,7 +193,7 @@ class JoinTest(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(Exception):
             mock_interaction.side_effect[0]
 
-        self.assertEqual(len(mock_music_service.music_players), 1)
+        mock_music_service.add_music_player.assert_called_once()
         self.assertEqual(mock_interaction.response.send_message.call_count, 1)
         mock_interaction.response.send_message.assert_called_with(
             'I did an whoopsie... Please try that again...'

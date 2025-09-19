@@ -2,7 +2,6 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock
 
 from cogs.music.music import Music
-from services.music_service import MusicService
 
 
 class VolumeTest(unittest.IsolatedAsyncioTestCase):
@@ -17,7 +16,7 @@ class VolumeTest(unittest.IsolatedAsyncioTestCase):
         mock_bot = MagicMock()
         mock_bot.loop = None
 
-        mock_music_service = MusicService()
+        mock_music_service = MagicMock()
 
         music_cog = Music(mock_bot, mock_music_service)
 
@@ -43,7 +42,7 @@ class VolumeTest(unittest.IsolatedAsyncioTestCase):
         mock_bot = MagicMock()
         mock_bot.loop = None
 
-        mock_music_service = MusicService()
+        mock_music_service = MagicMock()
 
         music_cog = Music(mock_bot, mock_music_service)
 
