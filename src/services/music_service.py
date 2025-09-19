@@ -33,12 +33,12 @@ class MusicService:
         self.music_players[music_player_id].clear_queue()
         self.music_players.pop(music_player_id)
 
-    def skip_song(self, music_player_id: str) -> None:
+    def get_next_song(self, music_player_id: str) -> Song:
         if music_player_id not in self.music_players:
             raise KeyError(f"Music player with id {music_player_id} not found")
 
         music_player = self.music_players[music_player_id]
-        music_player.get_next_song()
+        return music_player.get_next_song()
 
     async def play(self, music_player_id: str, input: str, limit: int = 1) -> tuple[Queue[Song], list[Song]]:
         if music_player_id not in self.music_players:

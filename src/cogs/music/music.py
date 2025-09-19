@@ -180,11 +180,13 @@ class Music(commands.Cog):
             await self.__send_message(interaction, 'I did an queueuepsie... Please try that again...')
 
     def __play_song(self, interaction: discord.Interaction):
-        music_player = self.music_service.get_music_player_by_id(
-            str(interaction.guild_id))
+        player_id = str(interaction.guild_id)
+        song_queue = self.music_service.get_song_queue_by_music_player_id(
+            player_id)
 
-        if not music_player.get_songs_in_queue().empty():
-            self.currentSong: Song = music_player.get_next_song()
+        if not song_queue.empty():
+            self.currentSong: Song = self.music_service.get_next_song(
+                player_id)
             interaction.guild.voice_client.play(discord.FFmpegPCMAudio(self.currentSong.url, **ffmpeg_options),
                                                 after=lambda e: self.__play_song(interaction))
 
