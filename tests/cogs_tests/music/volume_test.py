@@ -16,7 +16,9 @@ class VolumeTest(unittest.IsolatedAsyncioTestCase):
         mock_bot = MagicMock()
         mock_bot.loop = None
 
-        music_cog = Music(mock_bot)
+        mock_music_service = MagicMock()
+
+        music_cog = Music(mock_bot, mock_music_service)
 
         # Act
         await music_cog.volume.callback(music_cog, mock_interaction, volume)
@@ -40,7 +42,9 @@ class VolumeTest(unittest.IsolatedAsyncioTestCase):
         mock_bot = MagicMock()
         mock_bot.loop = None
 
-        music_cog = Music(mock_bot)
+        mock_music_service = MagicMock()
+
+        music_cog = Music(mock_bot, mock_music_service)
 
         # Act
         await music_cog.volume.callback(music_cog, mock_interaction, volume)
