@@ -1,3 +1,5 @@
+import asyncio
+from queue import Queue
 import discord
 from discord.voice_client import VoiceClient
 from discord.ext import commands
@@ -14,6 +16,7 @@ class Music(commands.Cog):
         self.bot = bot
         self.currentSong: Song = None
         self.music_service = music_service
+        self.idle_tasks: dict[str, asyncio.Task] = {}
 
     @app_commands.command(
         name='join',
@@ -160,6 +163,11 @@ class Music(commands.Cog):
 
         await self.__display_queue(interaction, list(song_queue.queue if song_queue is not None else []))
 
+    def cancel_idle_task(self, guild_id: str):
+        task = self.idle_tasks.pop(guild_id, None)
+        if task:
+            task.cancel()
+
     async def __display_queue(self, interaction: discord.Interaction, queue: list):
         try:
             if not queue:
@@ -185,10 +193,38 @@ class Music(commands.Cog):
             player_id)
 
         if not song_queue.empty():
+            # Cancel any existing idle timer for this guild
+            task = self.idle_tasks.pop(player_id, None)
+            if task:
+                task.cancel()
+
             self.currentSong: Song = self.music_service.get_next_song(
                 player_id)
             interaction.guild.voice_client.play(discord.FFmpegPCMAudio(self.currentSong.url, **ffmpeg_options),
                                                 after=lambda e: self.__play_song(interaction))
+        else:
+            self.__start_idle_timer(interaction.guild, song_queue)
+
+    def __start_idle_timer(self, guild: discord.Guild, song_queue: Queue[Song]):
+        player_id = str(guild.id)
+
+        # Cancel existing timer if running
+        if player_id in self.idle_tasks:
+            self.idle_tasks[player_id].cancel()
+
+        # Store the new task in the dict
+        self.idle_tasks[player_id] = self.bot.loop.create_task(
+            self.__timer(guild, song_queue, player_id)
+        )
+
+    async def __timer(self, guild: discord.Guild, song_queue: Queue[Song], player_id: str):
+        await asyncio.sleep(600)
+        voice: VoiceClient = guild.voice_client
+
+        if voice and not voice.is_playing() and song_queue.empty():
+            await voice.disconnect()
+            self.music_service.remove_music_player_by_id(player_id)
+            print(f"Disconnected from {guild.name} due to inactivity.")
 
     async def __send_message(self, interaction: discord.Interaction, message: str):
         if interaction.response.is_done():
