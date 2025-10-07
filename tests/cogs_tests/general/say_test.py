@@ -12,7 +12,9 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
         mock_bot = MagicMock()
         mock_bot.loop = None
 
-        general_cog = General(mock_bot)
+        mock_music_service = MagicMock()
+
+        general_cog = General(mock_bot, mock_music_service)
 
         # Act
         await general_cog.say.callback(general_cog, mock_interaction, input)
@@ -29,7 +31,9 @@ class SayTest(unittest.IsolatedAsyncioTestCase):
         mock_bot = MagicMock()
         mock_bot.loop = None
 
-        general_cog = General(mock_bot)
+        mock_music_service = MagicMock()
+
+        general_cog = General(mock_bot, mock_music_service)
 
         # Act
         await general_cog.say.callback(general_cog, mock_interaction, input)
