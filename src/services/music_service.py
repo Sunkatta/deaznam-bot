@@ -4,6 +4,7 @@ from models.music_player import MusicPlayer
 from models.song import Song
 from utils import capture_ffmpeg, suggestor
 from utils.config import ytdl
+from urllib.parse import urlparse
 
 
 class MusicService:
@@ -65,7 +66,16 @@ class MusicService:
 
     async def __prep_entries(self, input: str) -> list:
         loop = asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
+        data = {}
+
+        if self.__is_valid_http_url(input):
+            # If the query string is a valid HTTP/HTTPS URL, process it directly
+            data = await loop.run_in_executor(None, lambda: ytdl.extract_info(input, download=False))
+        else:
+            # If the query string is not a valid url and since it can match to a channel name or playlist,
+            # we employ search filters to actually search for a single video
+            data = await loop.run_in_executor(None, lambda: ytdl.extract_info(f"ytsearch1:ytvideo:{input}", download=False))
+
         songs_to_enqueue = []
         if 'entries' in data:
             for entry in data['entries']:
@@ -92,3 +102,10 @@ class MusicService:
             'song': song,
             'latest_info': {'url': entry['webpage_url'], 'suggest': suggest}
         }
+
+    def __is_valid_http_url(self, url: str) -> bool:
+        try:
+            result = urlparse(url)
+            return result.scheme in {"http", "https"} and bool(result.netloc)
+        except ValueError:
+            return False

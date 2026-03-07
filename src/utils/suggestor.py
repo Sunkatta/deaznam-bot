@@ -1,4 +1,6 @@
+import traceback
 from youtubesearchpython import VideosSearch
+
 
 def get_urls(input: str, suggest: str, limit: int) -> list:
     results = __search(input, limit)
@@ -6,9 +8,15 @@ def get_urls(input: str, suggest: str, limit: int) -> list:
         results = __search(suggest, limit)
     return [result['link'] for result in results]
 
+
 def __search(query: str, limit: int) -> list:
-    search = VideosSearch(query, limit)
-    return search.result()['result']
+    try:
+        search = VideosSearch(query, limit)
+        return search.result()['result']
+    except Exception as e:
+        print(traceback.format_exc())
+        return []
+
 
 def get_suggestions(title_words: list, tags: list) -> str:
     if len(tags) > 0:
