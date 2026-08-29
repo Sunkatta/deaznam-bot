@@ -29,6 +29,7 @@ def __search(query: str, limit: int) -> list:
         ]
     except Exception as e:
         print(traceback.format_exc())
+        return []
 
 
 def get_suggestions(title_words: list, tags: list) -> str:
