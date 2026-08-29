@@ -1,3 +1,4 @@
+import traceback
 from yt_dlp import YoutubeDL
 
 
@@ -26,8 +27,8 @@ def __search(query: str, limit: int) -> list:
             for entry in result.get("entries", [])
             if entry.get("webpage_url")
         ]
-    except Exception:
-        return []
+    except Exception as e:
+        print(traceback.format_exc())
 
 
 def get_suggestions(title_words: list, tags: list) -> str:
