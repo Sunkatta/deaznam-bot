@@ -13,7 +13,6 @@ def __search(query: str, limit: int) -> list:
         options = {
             "quiet": True,
             "no_warnings": True,
-            # "extract_flat": True,
         }
 
         with YoutubeDL(options) as ydl:
